@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import autoload from "@fastify/autoload";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import rateLimit from "@fastify/rate-limit";
@@ -6,16 +7,18 @@ import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { loadConfig } from "@promimi/config";
-import { routes } from "./routes.js";
-import { bootstrapAdmin } from "./bootstrap.js";
+import { bootstrapAdmin } from "./modules/identity/infrastructure/bootstrap-admin.js";
+import { registerHealthEndpoint } from "./shared/observability/health.js";
 import { installMetrics } from "./shared/observability/metrics.js";
 import { installCsrfOriginGuard } from "./shared/http/csrf.js";
 import { installErrorHandler } from "./shared/http/errors.js";
 import { rateLimits } from "./shared/http/rate-limit.js";
-import "./types.js";
 
 const config = loadConfig();
+const modulesDirectory = join(dirname(fileURLToPath(import.meta.url)), "modules");
 const app = Fastify({ logger: true, trustProxy: true, bodyLimit: 1_048_576 });
 const allowedOrigins = new Set([config.APP_URL, process.env.ADMIN_URL, "http://localhost:3000", "http://localhost:5173"].filter((origin): origin is string => Boolean(origin)));
 await app.register(helmet, {
@@ -43,6 +46,12 @@ await app.register(swagger, { openapi: { info: { title: "Promimi API", version: 
 await app.register(swaggerUi, { routePrefix: "/docs" });
 installMetrics(app);
 installErrorHandler(app);
-await app.register(routes, { prefix: "/api/v1" });
+registerHealthEndpoint(app);
+await app.register(autoload, {
+  dir: modulesDirectory,
+  dirNameRoutePrefix: false,
+  matchFilter: (path) => /[\\/]http[\\/](?:plugin|index)\.(?:[cm]?js|ts)$/.test(path),
+  options: { prefix: "/api/v1" }
+});
 await bootstrapAdmin();
 await app.listen({ port: config.PORT, host: "0.0.0.0" });

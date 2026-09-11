@@ -1,0 +1,2 @@
+import { apiOffers } from "../server";
+export async function loader() { const origin = process.env.APP_URL ?? "http://localhost:3000"; const offers = await apiOffers(); const urls = ["/", "/buscar", "/privacidade", "/termos", ...offers.map((offer) => `/oferta/${offer.slug}`)]; const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((path) => `<url><loc>${origin}${path}</loc></url>`).join("")}</urlset>`; return new Response(body, { headers: { "content-type": "application/xml" } }); }

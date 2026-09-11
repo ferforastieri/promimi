@@ -3,6 +3,7 @@ packages:
   - packages/*
 
 allowBuilds:
+  '@tailwindcss/oxide': true
   argon2: true
   esbuild: true
   puppeteer: false

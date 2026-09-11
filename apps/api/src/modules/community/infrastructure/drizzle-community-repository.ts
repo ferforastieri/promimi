@@ -5,5 +5,6 @@ export const communityRepository = {
   favorite: (userId: string, offerId: string) => db.insert(favorites).values({ userId, offerId }).onConflictDoNothing(),
   comment: (offerId: string, userId: string, body: string) => db.insert(comments).values({ offerId, userId, body }).returning(),
   report: (commentId: string, reporterId: string, reason: string) => db.insert(reports).values({ commentId, reporterId, reason }),
+  moderationQueue: () => db.query.comments.findMany({ with: { user: true, offer: true }, orderBy: [desc(comments.createdAt)] }),
   moderate: (id: string, isHidden: boolean) => db.update(comments).set({ isHidden, updatedAt: new Date() }).where(eq(comments.id, id)).returning()
 };

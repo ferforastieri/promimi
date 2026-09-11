@@ -1,0 +1,12 @@
+{
+  "name": "Promimi — Painel",
+  "short_name": "Promimi Admin",
+  "description": "Painel operacional do Promimi.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f7f5",
+  "theme_color": "#e5484d",
+  "icons": [{ "src": "/brand/promimi.png", "sizes": "1280x1280", "type": "image/png", "purpose": "any maskable" }]
+}

@@ -1,9 +1,0 @@
-:root { --orange:#ff6b24; --orange-dark:#e75112; --green:#15835d; --red:#d93945; --ink:#20201e; --muted:#726f68; --paper:#fffdf8; --line:#e9e5dd; }
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--paper); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
-button, input, select, textarea { font: inherit; }
-.pm-button { appearance:none; border:0; border-radius:12px; padding: .76rem 1rem; background:var(--orange); color:white; font-weight:800; cursor:pointer; transition:transform .16s, background .16s; }
-.pm-button:hover { background:var(--orange-dark); transform:translateY(-1px); }
-.pm-button:focus-visible, a:focus-visible, input:focus-visible { outline:3px solid #ffbd9d; outline-offset:3px; }
-.pm-pill { display:inline-flex; align-items:center; width:max-content; border-radius:999px; padding:.28rem .58rem; font-size:.73rem; font-weight:800; }
-.pm-pill--neutral { background:#f1eee7; color:#5e5b54; }.pm-pill--green { background:#dff5e9; color:#08704a; }.pm-pill--red { background:#ffe3e3; color:#b62c36; }.pm-pill--orange { background:#ffeadf; color:#ca490f; }

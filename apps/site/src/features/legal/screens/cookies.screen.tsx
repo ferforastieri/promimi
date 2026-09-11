@@ -1,0 +1,3 @@
+import { Footer, Header } from "../../shell/components";
+export const meta = () => [{ title: "Cookies — Promimi" }];
+export default function Cookies() { return <><Header/><main className="legal-page"><p className="eyebrow">TRANSPARÊNCIA</p><h1>Cookies</h1><p>Usamos armazenamento essencial para manter sua sessão e preferências. Métricas de clique são agregadas para entender quais ofertas ajudam mais pessoas.</p><h2>Gerencie suas escolhas</h2><p>Você pode limpar o armazenamento do Promimi nas configurações do navegador. Cookies não essenciais devem ser ativados somente após seu consentimento.</p></main><Footer/></>; }

@@ -1,0 +1,24 @@
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-mono: "DM Mono", ui-monospace, monospace;
+  --color-ink: #20201e;
+  --color-paper: #fffdf8;
+  --color-mist: #f7f7f4;
+  --color-line: #e9e5dd;
+  --color-brand: #ff6b24;
+  --color-brand-dark: #d94d12;
+  --color-pine: #08704a;
+  --color-pine-soft: #dff5e9;
+  --color-danger: #b62c36;
+  --color-danger-soft: #ffe3e3;
+  --color-amber: #ca490f;
+  --color-amber-soft: #ffeadf;
+}
+
+@layer base {
+  * { @apply box-border; }
+  body { @apply m-0 bg-paper font-sans text-ink antialiased; }
+  button, input, select, textarea { font: inherit; }
+  button, a, input, select, textarea { @apply focus-visible:outline-3 focus-visible:outline-brand/40 focus-visible:outline-offset-3; }
+}

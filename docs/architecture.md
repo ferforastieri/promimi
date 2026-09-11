@@ -17,21 +17,38 @@ Caddy (TLS, headers e roteamento)
 
 As mudanças novas devem pertencer a um destes domínios, e não ser adicionadas como regra solta de rota:
 
-| Domínio | Responsabilidade |
-| --- | --- |
-| Identity | sessão, contas, papéis, TOTP e recuperação de senha |
-| Catalog | lojas, categorias, ofertas, preço e expiração |
-| Community | favoritos, comentários e denúncias |
-| Automation | rotinas, critérios, execuções e coleta |
-| Publishing | fila, tentativas e histórico de publicação |
-| Integrations | credenciais cifradas e adaptadores externos |
-| Analytics | cliques e métricas operacionais |
+| Domínio      | Responsabilidade                                    |
+| ------------ | --------------------------------------------------- |
+| Identity     | sessão, contas, papéis, TOTP e recuperação de senha |
+| Catalog      | lojas, categorias, ofertas, preço e expiração       |
+| Community    | favoritos, comentários e denúncias                  |
+| Automation   | rotinas, critérios, execuções e coleta              |
+| Publishing   | fila, tentativas e histórico de publicação          |
+| Integrations | credenciais cifradas e adaptadores externos         |
+| Analytics    | cliques e métricas operacionais                     |
 
-O diretório de destino é `apps/api/src/modules/<domínio>/`. Cada módulo expõe HTTP, casos de uso, regras de domínio e infraestrutura de persistência. `routes.ts` é somente o composition root e não contém regras de negócio.
+O diretório de destino é `apps/api/src/modules/<domínio>/`. Cada módulo expõe `http/plugin.ts`, controllers, casos de uso, regras de domínio e infraestrutura de persistência. O Fastify descobre os plugins automaticamente.
 
 ## Frontend
 
-`apps/site` e `apps/admin` são aplicações separadas porque servem públicos diferentes. Cada uma centraliza chamadas no seu `lib/api-client.ts`; telas não armazenam token nem montam cabeçalhos de autorização. Componentes visuais genéricos ficam em `packages/ui`; componentes e regras de uma feature ficam na própria aplicação.
+`apps/site` e `apps/admin` são aplicações separadas porque servem públicos diferentes. Telas não armazenam token nem montam cabeçalhos de autorização: a sessão é sempre o cookie HttpOnly.
+
+No Admin, cada endpoint está em `src/api/features/<domínio>/<chamada>.ts`, com seus tipos de entrada e saída no próprio arquivo. Cada feature contém os hooks React Query e os componentes que os consomem em `src/features/<domínio>/`. Assim, componentes não chamam `fetch`, não conhecem URL e não mantêm uma cópia manual do cache do servidor.
+
+`packages/query` contém somente a política compartilhada de cache e o provider React Query. As chaves, endpoints e hooks continuam na aplicação dona da tela; o Site e o Admin não acoplam suas features entre si.
+
+## Packages compartilhados
+
+Packages não são uma segunda camada para organizar qualquer arquivo. Eles existem somente quando o mesmo código é necessário em dois ou mais processos:
+
+| Package     | Conteúdo permitido                                                                 |
+| ----------- | ---------------------------------------------------------------------------------- |
+| `config`    | schemas e carregadores de configuração de ambiente                                 |
+| `database`  | schema Drizzle, conexão, seed e migrações                                           |
+| `query`     | provider e política de cache React Query para os dois frontends                    |
+| `design-system` | marca, tokens e componentes visuais genéricos; sem regra de domínio ou página |
+
+Regra prática: se só a API usa uma regra de catálogo, ela fica em `apps/api/src/modules/catalog`; se só o painel usa uma tela, ela fica em `apps/admin/src/features`. Não se cria package apenas para reexportar um arquivo.
 
 ## Segurança
 

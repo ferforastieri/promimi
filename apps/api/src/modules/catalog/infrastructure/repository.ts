@@ -1,5 +1,7 @@
 import { and, desc, eq, gte, ilike, lte } from "drizzle-orm";
-import { categories, clicks, db, offers, stores } from "@promimi/database";
+import { categories, clicks, db, integrations, offers, outboxEvents, publications, stores } from "@promimi/database";
+import type { CreateOfferCommand, UpdateOfferCommand } from "../application/offer-commands.js";
+import type { OfferStatus } from "../domain/offer-policy.js";
 
 export type OfferSearch = { q?: string; store?: string; min?: string; max?: string; category?: string };
 
@@ -11,6 +13,40 @@ export const catalogRepository = {
   categoryBySlug: (slug: string) => db.query.categories.findFirst({ where: eq(categories.slug, slug) }),
   createCategory: (value: typeof categories.$inferInsert) => db.insert(categories).values(value).returning(),
   updateCategory: (id: string, value: Partial<typeof categories.$inferInsert>) => db.update(categories).set({ ...value, updatedAt: new Date() }).where(eq(categories.id, id)).returning(),
+  async enabledPublicationDestinations() {
+    return (await db.select({ provider: integrations.provider }).from(integrations).where(eq(integrations.enabled, true)))
+      .map((item) => item.provider)
+      .filter((provider): provider is string => ["telegram", "whatsapp", "instagram", "facebook", "x"].includes(provider));
+  },
+  async createOffer(command: CreateOfferCommand & { status: OfferStatus; slug: string; discountPercent: number | null; destinations: string[] }) {
+    return db.transaction(async (tx) => {
+      const [offer] = await tx.insert(offers).values({
+        ...command,
+        currentPrice: String(command.currentPrice),
+        originalPrice: command.originalPrice ? String(command.originalPrice) : null,
+        publishedAt: command.status === "PUBLISHED" ? new Date() : null,
+        verifiedAt: new Date()
+      }).returning();
+      await createPublicationEvents(tx, offer.id, command.destinations);
+      return offer;
+    });
+  },
+  async updateOffer(id: string, command: UpdateOfferCommand & { discountPercent?: number | null; destinations: string[] }) {
+    return db.transaction(async (tx) => {
+      const [offer] = await tx.update(offers).set({
+        ...command,
+        currentPrice: command.currentPrice === undefined ? undefined : String(command.currentPrice),
+        originalPrice: command.originalPrice === undefined ? undefined : command.originalPrice === null ? null : String(command.originalPrice),
+        publishedAt: command.status === "PUBLISHED" ? new Date() : undefined,
+        updatedAt: new Date()
+      }).where(eq(offers.id, id)).returning();
+      if (!offer) return undefined;
+      const existing = await tx.select({ destination: publications.destination }).from(publications).where(eq(publications.offerId, offer.id));
+      const seen = new Set(existing.map((item) => item.destination));
+      await createPublicationEvents(tx, offer.id, command.destinations.filter((destination) => !seen.has(destination)));
+      return offer;
+    });
+  },
   async publishedOffers(query: OfferSearch) {
     const filters = [eq(offers.status, "PUBLISHED")];
     if (query.q) filters.push(ilike(offers.title, `%${query.q}%`));
@@ -28,3 +64,9 @@ export const catalogRepository = {
     return offer;
   }
 };
+
+async function createPublicationEvents(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], offerId: string, destinations: string[]) {
+  if (!destinations.length) return;
+  const created = await tx.insert(publications).values(destinations.map((destination) => ({ offerId, destination, status: "PENDING" as const }))).returning({ id: publications.id });
+  await tx.insert(outboxEvents).values(created.map((publication) => ({ topic: "publication.requested", aggregateId: offerId, payload: { publicationId: publication.id } })));
+}
