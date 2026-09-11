@@ -6,6 +6,11 @@ export type OfferSearch = { q?: string; store?: string; min?: string; max?: stri
 export const catalogRepository = {
   activeCategories: () => db.select().from(categories).where(eq(categories.isActive, true)),
   activeStores: () => db.select().from(stores).where(eq(stores.isActive, true)),
+  adminOffers: () => db.query.offers.findMany({ with: { store: true, category: true }, orderBy: [desc(offers.updatedAt)] }),
+  categories: () => db.select().from(categories).orderBy(categories.name),
+  categoryBySlug: (slug: string) => db.query.categories.findFirst({ where: eq(categories.slug, slug) }),
+  createCategory: (value: typeof categories.$inferInsert) => db.insert(categories).values(value).returning(),
+  updateCategory: (id: string, value: Partial<typeof categories.$inferInsert>) => db.update(categories).set({ ...value, updatedAt: new Date() }).where(eq(categories.id, id)).returning(),
   async publishedOffers(query: OfferSearch) {
     const filters = [eq(offers.status, "PUBLISHED")];
     if (query.q) filters.push(ilike(offers.title, `%${query.q}%`));

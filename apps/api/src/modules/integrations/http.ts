@@ -2,21 +2,23 @@ import type { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
 import { db, integrations } from "@promimi/database";
 import { z } from "zod";
-import { requireStaff } from "../../auth.js";
+import { requireStaff } from "../../shared/auth/guards.js";
 import { decryptSecret, encryptSecret } from "../../crypto.js";
+import { parseDestinations } from "./application/whatsapp-destinations.js";
+import { integrationRepository } from "./infrastructure/drizzle-integration-repository.js";
 
 const encryptionKey = () => process.env.INTEGRATION_ENCRYPTION_KEY ?? "development-integration-key-must-be-overridden";
 
 /** Integrations boundary: credentials are encrypted at rest and never returned by HTTP. */
 export async function registerIntegrationsHttp(app: FastifyInstance) {
-  app.get("/admin/integrations", { preHandler: requireStaff }, async () => ({ data: (await db.select().from(integrations)).map(({ credentialsEncrypted: _secret, ...integration }) => integration) }));
+  app.get("/admin/integrations", { preHandler: requireStaff }, async () => ({ data: (await integrationRepository.list()).map(({ credentialsEncrypted: _secret, ...integration }) => integration) }));
   app.put("/admin/integrations/:provider", { preHandler: requireStaff }, async (request, reply) => {
     const { provider } = request.params as { provider: string }; const body = z.object({ enabled: z.boolean(), settings: z.record(z.unknown()).default({}), credentials: z.record(z.string()).optional() }).parse(request.body);
-    const existing = await db.query.integrations.findFirst({ where: eq(integrations.provider, provider) }); const existingSettings = (existing?.settings && typeof existing.settings === "object" && !Array.isArray(existing.settings) ? existing.settings : {}) as Record<string, unknown>; const settings = { ...existingSettings, ...body.settings };
+    const existing = await integrationRepository.find(provider); const existingSettings = (existing?.settings && typeof existing.settings === "object" && !Array.isArray(existing.settings) ? existing.settings : {}) as Record<string, unknown>; const settings = { ...existingSettings, ...body.settings };
     const credentials = body.credentials ?? (existing?.credentialsEncrypted ? decryptSecret<Record<string, string>>(existing.credentialsEncrypted, encryptionKey()) : {});
-    if (provider === "whatsapp" && body.enabled) { const destinations = [...new Set((credentials.destinations ?? credentials.destination ?? "").split(",").map((value) => value.trim()).filter(Boolean))]; const validated = Array.isArray(settings.validatedDestinations) ? settings.validatedDestinations.filter((value): value is string => typeof value === "string") : []; if (!destinations.length || !destinations.every((destination) => validated.includes(destination))) return reply.code(400).send({ error: "WHATSAPP_NOT_VALIDATED", message: "Salve os destinos, valide grupos/canais e só então ative o WhatsApp." }); }
+    if (provider === "whatsapp" && body.enabled) { const destinations = parseDestinations(credentials); const validated = Array.isArray(settings.validatedDestinations) ? settings.validatedDestinations.filter((value): value is string => typeof value === "string") : []; if (!destinations.length || !destinations.every((destination) => validated.includes(destination))) return reply.code(400).send({ error: "WHATSAPP_NOT_VALIDATED", message: "Salve os destinos, valide grupos/canais e só então ative o WhatsApp." }); }
     const credentialsEncrypted = body.credentials ? encryptSecret(body.credentials, encryptionKey()) : existing?.credentialsEncrypted ?? null;
-    const [integration] = await db.insert(integrations).values({ provider, enabled: body.enabled, settings, credentialsEncrypted }).onConflictDoUpdate({ target: integrations.provider, set: { enabled: body.enabled, settings, credentialsEncrypted, updatedAt: new Date() } }).returning(); const { credentialsEncrypted: _secret, ...safe } = integration; return { data: safe };
+    const [integration] = await integrationRepository.save({ provider, enabled: body.enabled, settings, credentialsEncrypted }); const { credentialsEncrypted: _secret, ...safe } = integration; return { data: safe };
   });
   app.post("/admin/integrations/whatsapp/validate", { preHandler: requireStaff }, async (_request, reply) => {
     const integration = await db.query.integrations.findFirst({ where: eq(integrations.provider, "whatsapp") }); if (!integration?.credentialsEncrypted) return reply.code(400).send({ error: "WHATSAPP_NOT_CONFIGURED", message: "Salve o bridge e os destinos do WhatsApp antes de validar." });

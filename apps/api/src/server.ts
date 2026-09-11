@@ -9,9 +9,10 @@ import swaggerUi from "@fastify/swagger-ui";
 import { loadConfig } from "@promimi/config";
 import { routes } from "./routes.js";
 import { bootstrapAdmin } from "./bootstrap.js";
-import { installMetrics } from "./metrics.js";
+import { installMetrics } from "./shared/observability/metrics.js";
 import { installCsrfOriginGuard } from "./shared/http/csrf.js";
 import { installErrorHandler } from "./shared/http/errors.js";
+import { rateLimits } from "./shared/http/rate-limit.js";
 import "./types.js";
 
 const config = loadConfig();
@@ -36,7 +37,7 @@ await app.register(helmet, {
 await app.register(cookie);
 await app.register(cors, { credentials: true, origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)) });
 await app.register(jwt, { secret: config.JWT_SECRET, cookie: { cookieName: "promimi_session", signed: false } });
-await app.register(rateLimit, { max: 100, timeWindow: "1 minute", ban: 2 });
+await app.register(rateLimit, rateLimits.default);
 installCsrfOriginGuard(app, allowedOrigins);
 await app.register(swagger, { openapi: { info: { title: "Promimi API", version: "v1" }, servers: [{ url: "/api/v1" }] } });
 await app.register(swaggerUi, { routePrefix: "/docs" });

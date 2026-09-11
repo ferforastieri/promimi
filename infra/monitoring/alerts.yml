@@ -1,0 +1,8 @@
+groups:
+  - name: promimi
+    rules:
+      - alert: PromimiApiUnavailable
+        expr: up{job="promimi-api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations: { summary: "A API Promimi não responde" }

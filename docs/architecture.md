@@ -27,7 +27,7 @@ As mudanças novas devem pertencer a um destes domínios, e não ser adicionadas
 | Integrations | credenciais cifradas e adaptadores externos |
 | Analytics | cliques e métricas operacionais |
 
-O diretório de destino é `apps/api/src/modules/<domínio>/`. Cada módulo deve expor HTTP, casos de uso, regras de domínio e infraestrutura de persistência. A migração do arquivo legado `routes.ts` será feita domínio por domínio, sem alterar contratos públicos.
+O diretório de destino é `apps/api/src/modules/<domínio>/`. Cada módulo expõe HTTP, casos de uso, regras de domínio e infraestrutura de persistência. `routes.ts` é somente o composition root e não contém regras de negócio.
 
 ## Frontend
 
@@ -44,7 +44,7 @@ O diretório de destino é `apps/api/src/modules/<domínio>/`. Cada módulo deve
 
 ## Assíncrono e confiabilidade
 
-O worker consome filas pg-boss no mesmo PostgreSQL para rotina, expiração e publicação. A outbox transacional já está ativa: publicar uma oferta grava oferta, publicações e eventos na mesma transação; o relay do worker só confirma o evento depois de enfileirá-lo.
+O worker consome filas pg-boss no mesmo PostgreSQL para rotina, expiração e publicação. Seus jobs usam portas/repositórios e conectores; o processo não incorpora regras de HTTP. A outbox transacional grava oferta, publicações e eventos na mesma transação; o relay só confirma o evento depois de enfileirá-lo.
 
 ## Operação
 

@@ -3,19 +3,20 @@ import argon2 from "argon2";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { authTokens, db, users } from "@promimi/database";
 import { z } from "zod";
-import { requireStaff, requireUser } from "../../auth.js";
+import { requireStaff, requireUser } from "../../shared/auth/guards.js";
 import { decryptSecret, encryptSecret } from "../../crypto.js";
 import { deliverMail, passwordResetMail, verificationMail } from "../../mailer.js";
 import { authenticator } from "otplib";
-import { clearSession, establishSession } from "./session.js";
+import { clearSession, establishSession } from "../../shared/auth/session.js";
 import { identityService } from "./application/service.js";
+import { rateLimits } from "../../shared/http/rate-limit.js";
 
 const publicUrl = () => process.env.APP_URL ?? "http://localhost:3000";
 const encryptionKey = () => process.env.INTEGRATION_ENCRYPTION_KEY ?? "development-integration-key-must-be-overridden";
 
 /** Identity boundary: browser sessions, credentials, MFA and account lifecycle. */
 export async function registerIdentityHttp(app: FastifyInstance) {
-  app.post("/auth/register", { config: { rateLimit: { max: 3, timeWindow: "1 hour" } } }, async (request, reply) => {
+  app.post("/auth/register", { config: { rateLimit: rateLimits.registration } }, async (request, reply) => {
     const input = z.object({ email: z.string().email(), password: z.string().min(10), name: z.string().min(2).max(120).optional() }).parse(request.body);
     const exists = await identityService.findUserByEmail(input.email);
     if (exists) return reply.code(409).send({ error: "EMAIL_IN_USE", message: "Este e-mail já está cadastrado." });
@@ -25,27 +26,27 @@ export async function registerIdentityHttp(app: FastifyInstance) {
     establishSession(app, reply, { id: user.id, role: user.role, email: user.email });
     return reply.code(201).send({ user: { id: user.id, email: user.email, name: user.name, role: user.role }, verificationPending: true });
   });
-  app.post("/auth/verify-email", { config: { rateLimit: { max: 10, timeWindow: "1 hour" } } }, async (request, reply) => {
+  app.post("/auth/verify-email", { config: { rateLimit: rateLimits.tokenAction } }, async (request, reply) => {
     const { token } = z.object({ token: z.string().min(20) }).parse(request.body);
     const record = await identityService.consumeToken(token, "EMAIL_VERIFICATION");
     if (!record) return reply.code(400).send({ error: "INVALID_TOKEN", message: "Este link expirou ou já foi utilizado." });
     await db.transaction(async (tx) => { await tx.update(users).set({ emailVerifiedAt: new Date(), updatedAt: new Date() }).where(eq(users.id, record.userId)); await tx.update(authTokens).set({ usedAt: new Date() }).where(eq(authTokens.id, record.id)); });
     return { ok: true };
   });
-  app.post("/auth/request-password-reset", { config: { rateLimit: { max: 3, timeWindow: "1 hour" } } }, async (request) => {
+  app.post("/auth/request-password-reset", { config: { rateLimit: rateLimits.passwordReset } }, async (request) => {
     const { email } = z.object({ email: z.string().email() }).parse(request.body);
     const user = await identityService.findUserByEmail(email);
     if (user) { const token = await identityService.issueToken(user.id, "PASSWORD_RESET"); await deliverMail(passwordResetMail(user.email, `${publicUrl()}/redefinir-senha?token=${encodeURIComponent(token)}`)); }
     return { ok: true };
   });
-  app.post("/auth/reset-password", { config: { rateLimit: { max: 5, timeWindow: "1 hour" } } }, async (request, reply) => {
+  app.post("/auth/reset-password", { config: { rateLimit: rateLimits.login } }, async (request, reply) => {
     const body = z.object({ token: z.string().min(20), password: z.string().min(10) }).parse(request.body);
     const record = await identityService.consumeToken(body.token, "PASSWORD_RESET");
     if (!record) return reply.code(400).send({ error: "INVALID_TOKEN", message: "Este link expirou ou já foi utilizado." });
     await db.transaction(async (tx) => { await tx.update(users).set({ passwordHash: await argon2.hash(body.password), updatedAt: new Date() }).where(eq(users.id, record.userId)); await tx.update(authTokens).set({ usedAt: new Date() }).where(eq(authTokens.id, record.id)); });
     return { ok: true };
   });
-  app.post("/auth/login", { config: { rateLimit: { max: 5, timeWindow: "15 minutes" } } }, async (request, reply) => {
+  app.post("/auth/login", { config: { rateLimit: rateLimits.login } }, async (request, reply) => {
     const input = z.object({ email: z.string().email(), password: z.string().min(1), totpCode: z.string().regex(/^\d{6}$/).optional() }).parse(request.body);
     const user = await identityService.findUserByEmail(input.email);
     if (!user || user.deletedAt || !(await argon2.verify(user.passwordHash, input.password))) return reply.code(401).send({ error: "INVALID_CREDENTIALS", message: "E-mail ou senha incorretos." });
@@ -59,7 +60,7 @@ export async function registerIdentityHttp(app: FastifyInstance) {
   app.post("/auth/logout", { preHandler: requireUser }, async (_request, reply) => { clearSession(reply); return { ok: true }; });
   app.get("/me", { preHandler: requireUser }, async (request, reply) => { const user = await identityService.userProfile(request.user.id); if (!user || user.deletedAt) return reply.code(404).send({ error: "NOT_FOUND", message: "Conta não encontrada." }); return { data: { id: user.id, email: user.email, name: user.name, role: user.role, emailVerifiedAt: user.emailVerifiedAt } }; });
   app.get("/me/favorites", { preHandler: requireUser }, async (request) => ({ data: await identityService.favorites(request.user.id) }));
-  app.delete("/me", { preHandler: requireUser, config: { rateLimit: { max: 3, timeWindow: "1 hour" } } }, async (request, reply) => { await identityService.anonymizeUser(request.user.id); clearSession(reply); return { ok: true }; });
+  app.delete("/me", { preHandler: requireUser, config: { rateLimit: rateLimits.accountDeletion } }, async (request, reply) => { await identityService.anonymizeUser(request.user.id); clearSession(reply); return { ok: true }; });
   app.post("/admin/totp/setup", { preHandler: requireStaff }, async (request, reply) => {
     if (request.user.role !== "ADMIN") return reply.code(403).send({ error: "FORBIDDEN", message: "Apenas administradores configuram TOTP." });
     const secret = authenticator.generateSecret(); await db.update(users).set({ totpSecretEncrypted: encryptSecret(secret, encryptionKey()), updatedAt: new Date() }).where(eq(users.id, request.user.id));

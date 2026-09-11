@@ -69,6 +69,7 @@ services:
     profiles: ["monitoring"]
     volumes:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus_data:/prometheus
     restart: unless-stopped
 volumes:
