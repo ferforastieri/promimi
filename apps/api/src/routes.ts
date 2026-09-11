@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import argon2 from "argon2";
-import { and, desc, eq, gte, ilike, isNull, lte, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { authTokens, categories, clicks, comments, db, favorites, integrations, offers, publications, reports, routineExecutions, routines, stores, users } from "@promimi/database";
 import { requireStaff, requireUser } from "./auth.js";
 import { z } from "zod";
@@ -11,10 +11,10 @@ import { authenticator } from "otplib";
 import { socialCardSvg } from "./social-card.js";
 import { clearSession, establishSession } from "./modules/identity/session.js";
 import { registerCommunityHttp } from "./modules/community/http.js";
+import { registerCatalogHttp } from "./modules/catalog/http.js";
+import { mapOffer, slugify } from "./modules/catalog/domain/offer.js";
 
 const offerInput = z.object({ title: z.string().min(8).max(240), description: z.string().max(5000).optional(), storeId: z.string().uuid(), categoryId: z.string().uuid().optional().nullable(), currentPrice: z.coerce.number().positive(), originalPrice: z.coerce.number().positive().optional().nullable(), couponCode: z.string().max(64).optional().nullable(), affiliateUrl: z.string().url(), imageUrl: z.string().url().optional().nullable(), expiresAt: z.coerce.date().optional().nullable(), status: z.enum(["DRAFT", "PUBLISHED", "EXPIRED", "PAUSED"]).optional() });
-const slugify = (value: string) => value.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-const mapOffer = (row: typeof offers.$inferSelect & { store: typeof stores.$inferSelect; category: typeof categories.$inferSelect | null }) => ({ ...row, currentPrice: Number(row.currentPrice), originalPrice: row.originalPrice ? Number(row.originalPrice) : null, store: { id: row.store.id, name: row.store.name, slug: row.store.slug, logoUrl: row.store.logoUrl }, category: row.category ? { name: row.category.name, slug: row.category.slug } : null });
 const publicUrl = () => process.env.APP_URL ?? "http://localhost:3000";
 const newToken = async (userId: string, purpose: "EMAIL_VERIFICATION" | "PASSWORD_RESET") => {
   const token = createOpaqueToken();
@@ -27,46 +27,7 @@ export async function routes(app: FastifyInstance) {
     try { await db.execute(sql`select 1`); return { ok: true, now: new Date().toISOString() }; }
     catch { return reply.code(503).send({ ok: false, message: "Banco de dados indisponível." }); }
   });
-  app.get("/categories", async () => ({ data: await db.select().from(categories).where(eq(categories.isActive, true)) }));
-  app.get("/stores", async () => ({ data: await db.select().from(stores).where(eq(stores.isActive, true)) }));
-
-  app.get("/offers", async (request) => {
-    const q = request.query as { q?: string; store?: string; min?: string; max?: string; category?: string };
-    const filters = [eq(offers.status, "PUBLISHED")];
-    if (q.q) filters.push(ilike(offers.title, `%${q.q}%`));
-    if (q.min) filters.push(gte(offers.currentPrice, q.min));
-    if (q.max) filters.push(lte(offers.currentPrice, q.max));
-    const rows = await db.query.offers.findMany({ where: and(...filters), with: { store: true, category: true }, orderBy: [desc(offers.publishedAt)] });
-    return { data: rows.filter((item) => (!q.store || item.store.slug === q.store) && (!q.category || item.category?.slug === q.category)).map(mapOffer), total: rows.length };
-  });
-  app.get("/offers/:slug", async (request, reply) => {
-    const { slug } = request.params as { slug: string };
-    const item = await db.query.offers.findFirst({ where: and(eq(offers.slug, slug), eq(offers.status, "PUBLISHED")), with: { store: true, category: true } });
-    if (!item) return reply.code(404).send({ error: "NOT_FOUND", message: "Oferta não encontrada." });
-    return mapOffer(item);
-  });
-  app.get("/offers/:slug/card.svg", async (request, reply) => {
-    const { slug } = request.params as { slug: string };
-    const item = await db.query.offers.findFirst({ where: and(eq(offers.slug, slug), eq(offers.status, "PUBLISHED")), with: { store: true } });
-    if (!item) return reply.code(404).send({ error: "NOT_FOUND", message: "Oferta não encontrada." });
-    return reply.type("image/svg+xml; charset=utf-8").header("cache-control", "public, max-age=300").send(socialCardSvg(item));
-  });
-  app.post("/offers/:id/click", async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const source = (request.query as { source?: string }).source ?? "direct";
-    const [offer] = await db.select({ url: offers.affiliateUrl }).from(offers).where(eq(offers.id, id));
-    if (!offer) return reply.code(404).send({ error: "NOT_FOUND", message: "Oferta não encontrada." });
-    await db.insert(clicks).values({ offerId: id, source });
-    return { url: offer.url };
-  });
-  app.get("/offers/:id/go", async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const source = (request.query as { source?: string }).source ?? "direct";
-    const [offer] = await db.select({ url: offers.affiliateUrl }).from(offers).where(and(eq(offers.id, id), eq(offers.status, "PUBLISHED")));
-    if (!offer) return reply.code(404).send({ error: "NOT_FOUND", message: "Oferta não encontrada." });
-    await db.insert(clicks).values({ offerId: id, source });
-    return reply.redirect(offer.url, 302);
-  });
+  await registerCatalogHttp(app);
 
   app.post("/auth/register", { config: { rateLimit: { max: 3, timeWindow: "1 hour" } } }, async (request, reply) => {
     const input = z.object({ email: z.string().email(), password: z.string().min(10), name: z.string().min(2).max(120).optional() }).parse(request.body);
