@@ -1,33 +1,106 @@
 # Promimi
 
-<p align="center"><img src="packages/design-system/src/brand/promimi.png" width="120" alt="Promimi" /></p>
-<p align="center">Ofertas verificadas, cupons e automação de publicação para o público brasileiro.</p>
+<p align="center">
+  <img src="packages/design-system/src/brand/promimi.png" width="144" alt="Logo do Promimi" />
+</p>
 
-## O projeto
+<p align="center">
+  <strong>Ofertas confiáveis, cupons e publicação automática em um só lugar.</strong><br />
+  Uma plataforma brasileira para descobrir boas oportunidades e permitir que a equipe as publique com controle.
+</p>
 
-O Promimi reúne ofertas em um site público e dá à equipe um painel para conferir preços, organizar catálogo e publicar nos canais conectados.
+---
 
-```text
-Site público e painel → API Promimi → PostgreSQL + fila → Worker → canais conectados
-```
+## O que é o Promimi?
 
-- **Site**: catálogo, busca, conta, favoritos e comentários.
-- **Painel**: ofertas, categorias, integrações, rotinas e publicações.
-- **API**: autenticação segura e regras do produto.
-- **Worker**: automação, expiração e entrega nos canais.
+O Promimi é um portal de promoções. Para quem visita, ele oferece um lugar simples para encontrar ofertas, buscar produtos, salvar favoritos, usar cupons e participar dos comentários. Para a operação, entrega um painel administrativo que concentra a curadoria do catálogo, a moderação da comunidade e as integrações de publicação.
 
-## Arquitetura
-
-É um monólito modular: um produto com módulos claros para catálogo, identidade, comunidade, automação, publicação e integrações.
+Em termos simples: uma oferta entra, é revisada pela equipe, fica disponível no site e pode ser distribuída automaticamente para os canais configurados.
 
 ```text
-apps/      site, admin, api, worker e bridge WhatsApp opcional
-packages/  design-system, query, database e config
+Oferta → revisão e organização → publicação no site → distribuição nos canais
 ```
 
-## Desenvolvimento
+## O que já compõe a plataforma
+
+| Área                      | Para que serve                                                                                            |
+| ------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Site público**          | Catálogo de ofertas, pesquisa, categorias, cupons, favoritos, conta e comentários.                        |
+| **Painel administrativo** | Gestão de ofertas e categorias, curadoria, moderação, integrações, jobs e acompanhamento das publicações. |
+| **API**                   | Centraliza autenticação, regras do negócio, permissões e os dados utilizados pelos dois frontends.        |
+| **Worker**                | Executa as tarefas em segundo plano: agendamentos, expiração de ofertas e entregas automáticas.           |
+| **Bridge WhatsApp**       | Serviço isolado e opcional para integrar o canal sem misturar a sessão do WhatsApp à aplicação principal. |
+
+## Como as partes se conectam
+
+```text
+                  ┌──────────────────┐
+                  │  Site público    │
+                  └────────┬─────────┘
+                           │
+                  ┌────────▼─────────┐
+                  │ Painel da equipe │
+                  └────────┬─────────┘
+                           │ HTTPS
+                    ┌──────▼──────┐
+                    │  API Promimi │
+                    └──┬───────┬──┘
+                       │       │
+             ┌─────────▼──┐ ┌──▼─────────────┐
+             │ PostgreSQL │ │ Worker / fila  │
+             └────────────┘ └──┬─────────────┘
+                                │
+                   ┌────────────▼───────────┐
+                   │ Canais e integrações   │
+                   │ (incluindo WhatsApp)   │
+                   └────────────────────────┘
+```
+
+O projeto é um **monólito modular**. Isso significa que a plataforma pode ser desenvolvida e implantada como um produto único, mas seu código é separado por responsabilidade. Catálogo, identidade, comunidade, analytics, automação, publicação e integrações não ficam misturados entre si. É uma estrutura prática para evoluir rápido hoje e manter o caminho aberto para separar algum serviço no futuro, se isso passar a fazer sentido.
+
+## Organização do repositório
+
+```text
+apps/
+  site/       experiência para quem procura promoções
+  admin/      painel de operação e moderação
+  api/        regras do produto e endpoints
+  worker/     tarefas assíncronas e automações
+  whatsapp/   integração opcional, isolada
+
+packages/
+  design-system/  marca e componentes visuais compartilhados
+  query/          configuração compartilhada de dados e cache no frontend
+  database/       acesso ao banco, esquema e migrações
+  config/         convenções técnicas compartilhadas
+
+infra/        contêineres, proxy, banco e monitoramento
+docs/         decisões, arquitetura, operação e segurança
+```
+
+## Experiência e segurança
+
+- Sessões são mantidas em cookies `HttpOnly`, em vez de tokens acessíveis pelo JavaScript do navegador.
+- A API aplica proteção contra CSRF, limitação de requisições, validação de entradas e cabeçalhos de segurança.
+- Os serviços que atendem o público ficam atrás de um proxy HTTPS; banco de dados e comunicação interna não são expostos diretamente.
+- A integração com WhatsApp vive em processo separado para reduzir o impacto de falhas e facilitar sua operação.
+- O deploy produz imagens imutáveis e a publicação é feita pelo GitHub Actions a partir da branch `main`.
+
+Os detalhes técnicos e as decisões que sustentam essas escolhas estão em [docs/architecture.md](docs/architecture.md), [docs/security.md](docs/security.md) e [docs/operations.md](docs/operations.md).
+
+## Rodando localmente
+
+### Pré-requisitos
+
+- Node.js 22 ou superior
+- pnpm 11 ou superior
+- Docker e Docker Compose
+
+### Primeiros passos
 
 ```bash
+git clone https://github.com/ferforastieri/promimi.git
+cd promimi
 cp .env.example .env
 pnpm install
 docker compose up -d postgres
@@ -35,4 +108,35 @@ pnpm db:migrate
 pnpm dev
 ```
 
-Execute `pnpm verify` antes de enviar mudanças. Mais detalhes em [docs](docs/).
+O comando `pnpm dev` inicia os aplicativos de desenvolvimento. Configure os valores do arquivo `.env` conforme o ambiente local. O `.env` nunca deve ser versionado.
+
+### Conferindo uma mudança
+
+```bash
+pnpm verify
+```
+
+Esse comando verifica o banco, os tipos, os testes e os builds de todos os aplicativos antes de uma alteração seguir para produção.
+
+## Publicação
+
+Cada envio para `main` dispara o fluxo de entrega contínua. Ele valida o código, cria imagens versionadas dos serviços, publica-as no GitHub Container Registry e atualiza a stack no servidor configurado. Informações operacionais e as variáveis necessárias estão em [infra/OPERATIONS.md](infra/OPERATIONS.md).
+
+## Documentação
+
+- [Visão de arquitetura](docs/architecture.md)
+- [Operação e deploy](docs/operations.md)
+- [Segurança](docs/security.md)
+- [Decisões de arquitetura](docs/adr/)
+
+## Licença
+
+A licença será definida antes da primeira versão pública estável. A recomendação para este projeto é a **AGPL-3.0-or-later**: qualquer pessoa pode estudar, usar e modificar o código, mas quem oferecer uma versão modificada do Promimi como serviço também deve disponibilizar o código-fonte dessas modificações aos seus usuários. Veja a discussão na próxima seção antes de adotar essa escolha.
+
+## Qual licença faz sentido?
+
+Para um portal que pode ser hospedado como serviço, a recomendação é **GNU Affero General Public License v3.0 ou posterior (AGPL-3.0-or-later)**. Ela protege o caráter aberto do projeto mesmo quando alguém altera o Promimi e o disponibiliza pela internet sem redistribuir os arquivos.
+
+Se a intenção for permitir que empresas criem versões fechadas ou usem partes do projeto em produtos proprietários, a alternativa mais permissiva é a **Apache-2.0**. Ela mantém proteção explícita sobre patentes, mas não obriga a publicar alterações. Para manter controle exclusivo sobre o código e comercializá-lo sem essas permissões, o caminho adequado é uma licença proprietária — não uma licença open source.
+
+> Antes de adicionar `LICENSE`, o titular dos direitos deve confirmar a opção. A licença só pode ser concedida por quem detém os direitos autorais sobre todo o código incluído no repositório.

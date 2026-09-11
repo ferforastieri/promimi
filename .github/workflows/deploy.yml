@@ -37,7 +37,6 @@ jobs:
       - name: Build immutable deployment images
         env:
           TAG: ${{ github.sha }}
-          REPOSITORY: ${{ github.repository }}
           REGISTRY: ghcr.io
           REPOSITORY: ${{ github.repository }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
