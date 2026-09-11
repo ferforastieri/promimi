@@ -9,6 +9,11 @@ on:
         description: Public HTTPS URL loaded by the Android app
         required: false
         type: string
+      build_mobile:
+        description: Build the Android APK without deploying server services
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -25,6 +30,7 @@ jobs:
       code: ${{ steps.plan.outputs.code }}
       deployment: ${{ steps.plan.outputs.deployment }}
       services: ${{ steps.plan.outputs.services }}
+      restart_services: ${{ steps.plan.outputs.restart_services }}
       migrations: ${{ steps.plan.outputs.migrations }}
       stack: ${{ steps.plan.outputs.stack }}
       mobile: ${{ steps.filter.outputs.mobile }}
@@ -65,8 +71,9 @@ jobs:
             whatsapp:
               - 'apps/whatsapp/**'
               - 'infra/Dockerfile.whatsapp'
-            stack:
+            compose:
               - 'docker-compose.yml'
+            stack:
               - 'infra/caddy/**'
               - 'infra/compose/**'
               - 'infra/monitoring/**'
@@ -88,6 +95,7 @@ jobs:
           SITE: ${{ steps.filter.outputs.site }}
           ADMIN: ${{ steps.filter.outputs.admin }}
           WHATSAPP: ${{ steps.filter.outputs.whatsapp }}
+          COMPOSE: ${{ steps.filter.outputs.compose }}
           STACK: ${{ steps.filter.outputs.stack }}
           MOBILE: ${{ steps.filter.outputs.mobile }}
         run: |
@@ -102,7 +110,13 @@ jobs:
             [ "$WHATSAPP" = "true" ] && services+=(whatsapp)
           fi
 
-          if [ "${#services[@]}" -gt 0 ] || [ "$STACK" = "true" ]; then
+          if [ "$COMPOSE" = "true" ]; then
+            restart_services=(api worker site admin)
+          else
+            restart_services=("${services[@]}")
+          fi
+
+          if [ "${#restart_services[@]}" -gt 0 ] || [ "$STACK" = "true" ]; then
             echo "deployment=true" >> "$GITHUB_OUTPUT"
           else
             echo "deployment=false" >> "$GITHUB_OUTPUT"
@@ -121,6 +135,7 @@ jobs:
           fi
 
           echo "services=${services[*]}" >> "$GITHUB_OUTPUT"
+          echo "restart_services=${restart_services[*]}" >> "$GITHUB_OUTPUT"
 
   verify:
     needs: changes
@@ -204,26 +219,27 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          SERVICES: ${{ needs.changes.outputs.services }}
+          IMAGE_SERVICES: ${{ needs.changes.outputs.services }}
+          RESTART_SERVICES: ${{ needs.changes.outputs.restart_services }}
           MIGRATIONS: ${{ needs.changes.outputs.migrations }}
           STACK: ${{ needs.changes.outputs.stack }}
           TAG: ${{ github.sha }}
           REPOSITORY: ${{ github.repository }}
         run: |
-          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "SERVICES='$SERVICES' MIGRATIONS='$MIGRATIONS' STACK='$STACK' TAG='$TAG' REPOSITORY='$REPOSITORY' bash -s" <<'REMOTE'
+          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "IMAGE_SERVICES='$IMAGE_SERVICES' RESTART_SERVICES='$RESTART_SERVICES' MIGRATIONS='$MIGRATIONS' STACK='$STACK' TAG='$TAG' REPOSITORY='$REPOSITORY' bash -s" <<'REMOTE'
           set -euo pipefail
           cd "$HOME/promimi"
           umask 077
           touch .deploy-images.env
 
-          for service in $SERVICES; do
+          for service in $IMAGE_SERVICES; do
             image_var="PROMIMI_$(printf '%s' "$service" | tr '[:lower:]' '[:upper:]')_IMAGE"
             sed -i "/^$image_var=/d" .deploy-images.env
             printf '%s=ghcr.io/%s/%s:%s\n' "$image_var" "$REPOSITORY" "$service" "$TAG" >> .deploy-images.env
           done
 
-          if [ -n "$SERVICES" ]; then
-            docker compose --env-file .env --env-file .deploy-images.env pull $SERVICES
+          if [ -n "$IMAGE_SERVICES" ]; then
+            docker compose --env-file .env --env-file .deploy-images.env pull $IMAGE_SERVICES
           fi
 
           if [ "$MIGRATIONS" = "true" ]; then
@@ -234,22 +250,22 @@ jobs:
               fi
               sleep 3
             done
-            docker compose --env-file .env --env-file .deploy-images.env run --rm --no-deps api pnpm db:migrate
+            docker compose --env-file .env --env-file .deploy-images.env run --rm --no-deps -T api pnpm db:migrate
           fi
 
-          if [ -n "$SERVICES" ]; then
-            docker compose --env-file .env --env-file .deploy-images.env up -d --no-deps --force-recreate $SERVICES
+          if [ -n "$RESTART_SERVICES" ]; then
+            docker compose --env-file .env --env-file .deploy-images.env up -d --no-deps --force-recreate $RESTART_SERVICES
           fi
 
           if [ "$STACK" = "true" ]; then
             docker compose --env-file .env --env-file .deploy-images.env up -d --force-recreate caddy
           fi
 
-          case " $SERVICES " in
+          case " $RESTART_SERVICES " in
             *" api "*)
               healthy=false
               for attempt in 1 2 3 4 5 6 7 8 9 10; do
-                if docker compose --env-file .env --env-file .deploy-images.env exec -T api node -e "fetch('http://localhost:3001/api/v1/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"; then
+                if docker compose --env-file .env --env-file .deploy-images.env exec -T api node -e "fetch('http://localhost:3001/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"; then
                   healthy=true
                   break
                 fi
@@ -264,7 +280,7 @@ jobs:
 
   mobile:
     needs: [changes, verify]
-    if: always() && needs.changes.outputs.mobile == 'true' && (vars.MOBILE_SITE_URL != '' || inputs.mobile_site_url != '') && (needs.verify.result == 'success' || needs.verify.result == 'skipped')
+    if: always() && (needs.changes.outputs.mobile == 'true' || inputs.build_mobile == true) && (vars.MOBILE_SITE_URL != '' || inputs.mobile_site_url != '') && (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -282,7 +298,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
           cache: gradle
 
       - name: Install dependencies
