@@ -10,6 +10,7 @@ import { deliverMail, passwordResetMail, verificationMail } from "./mailer.js";
 import { authenticator } from "otplib";
 import { socialCardSvg } from "./social-card.js";
 import { clearSession, establishSession } from "./modules/identity/session.js";
+import { registerCommunityHttp } from "./modules/community/http.js";
 
 const offerInput = z.object({ title: z.string().min(8).max(240), description: z.string().max(5000).optional(), storeId: z.string().uuid(), categoryId: z.string().uuid().optional().nullable(), currentPrice: z.coerce.number().positive(), originalPrice: z.coerce.number().positive().optional().nullable(), couponCode: z.string().max(64).optional().nullable(), affiliateUrl: z.string().url(), imageUrl: z.string().url().optional().nullable(), expiresAt: z.coerce.date().optional().nullable(), status: z.enum(["DRAFT", "PUBLISHED", "EXPIRED", "PAUSED"]).optional() });
 const slugify = (value: string) => value.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -49,11 +50,6 @@ export async function routes(app: FastifyInstance) {
     const item = await db.query.offers.findFirst({ where: and(eq(offers.slug, slug), eq(offers.status, "PUBLISHED")), with: { store: true } });
     if (!item) return reply.code(404).send({ error: "NOT_FOUND", message: "Oferta não encontrada." });
     return reply.type("image/svg+xml; charset=utf-8").header("cache-control", "public, max-age=300").send(socialCardSvg(item));
-  });
-  app.get("/offers/:id/comments", async (request) => {
-    const { id } = request.params as { id: string };
-    const rows = await db.query.comments.findMany({ where: and(eq(comments.offerId, id), eq(comments.isHidden, false)), with: { user: true }, orderBy: [desc(comments.createdAt)] });
-    return { data: rows.map((comment) => ({ id: comment.id, body: comment.body, createdAt: comment.createdAt, author: comment.user.name ?? "Visitante Promimi" })) };
   });
   app.post("/offers/:id/click", async (request, reply) => {
     const { id } = request.params as { id: string };
@@ -118,9 +114,7 @@ export async function routes(app: FastifyInstance) {
     return { ok: true };
   });
 
-  app.post("/offers/:id/favorite", { preHandler: requireUser }, async (request) => { const { id } = request.params as { id: string }; await db.insert(favorites).values({ userId: request.user.id, offerId: id }).onConflictDoNothing(); return { ok: true }; });
-  app.post("/offers/:id/comments", { preHandler: requireUser, config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, async (request) => { const { id } = request.params as { id: string }; const body = z.object({ body: z.string().trim().min(2).max(1500) }).parse(request.body); const [comment] = await db.insert(comments).values({ offerId: id, userId: request.user.id, body: body.body.replace(/<[^>]*>/g, "") }).returning(); return { data: comment }; });
-  app.post("/comments/:id/report", { preHandler: requireUser }, async (request) => { const { id } = request.params as { id: string }; const body = z.object({ reason: z.string().min(3).max(300) }).parse(request.body); await db.insert(reports).values({ commentId: id, reporterId: request.user.id, reason: body.reason }); return { ok: true }; });
+  await registerCommunityHttp(app);
   app.get("/me", { preHandler: requireUser }, async (request, reply) => { const user = await db.query.users.findFirst({ where: eq(users.id, request.user.id) }); if (!user || user.deletedAt) return reply.code(404).send({ error: "NOT_FOUND", message: "Conta não encontrada." }); return { data: { id: user.id, email: user.email, name: user.name, role: user.role, emailVerifiedAt: user.emailVerifiedAt } }; });
   app.get("/me/favorites", { preHandler: requireUser }, async (request) => ({ data: await db.query.favorites.findMany({ where: eq(favorites.userId, request.user.id), with: { offer: { with: { store: true, category: true } } }, orderBy: [desc(favorites.createdAt)] }) }));
   app.delete("/me", { preHandler: requireUser, config: { rateLimit: { max: 3, timeWindow: "1 hour" } } }, async (request, reply) => { const anonymized = `deleted+${request.user.id}@deleted.promimi.invalid`; await db.update(users).set({ email: anonymized, name: null, passwordHash: await argon2.hash(createOpaqueToken()), totpSecretEncrypted: null, totpEnabled: false, deletedAt: new Date(), updatedAt: new Date() }).where(eq(users.id, request.user.id)); clearSession(reply); return { ok: true }; });
