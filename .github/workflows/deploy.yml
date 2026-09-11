@@ -20,7 +20,7 @@ permissions:
   packages: write
 
 concurrency:
-  group: production-deploy
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && 'mobile' || 'production' }}
   cancel-in-progress: true
 
 jobs:
@@ -166,7 +166,7 @@ jobs:
 
   build-images:
     needs: [changes, verify]
-    if: always() && needs.changes.outputs.services != '' && (needs.verify.result == 'success' || needs.verify.result == 'skipped')
+    if: github.event_name == 'push' && always() && needs.changes.outputs.services != '' && (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -188,7 +188,7 @@ jobs:
 
   deploy:
     needs: [changes, verify, build-images]
-    if: always() && needs.changes.outputs.deployment == 'true' && (needs.verify.result == 'success' || needs.verify.result == 'skipped') && (needs.build-images.result == 'success' || needs.build-images.result == 'skipped')
+    if: github.event_name == 'push' && always() && needs.changes.outputs.deployment == 'true' && (needs.verify.result == 'success' || needs.verify.result == 'skipped') && (needs.build-images.result == 'success' || needs.build-images.result == 'skipped')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
