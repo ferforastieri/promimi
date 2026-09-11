@@ -86,6 +86,15 @@ jobs:
             "PROMIMI_ADMIN_IMAGE=ghcr.io/ferforastieri/promimi/admin:$TAG" \
             "PROMIMI_WHATSAPP_IMAGE=ghcr.io/ferforastieri/promimi/whatsapp:$TAG" > .deploy-images.env
           docker compose --env-file .env --env-file .deploy-images.env pull
+          docker compose --env-file .env --env-file .deploy-images.env up -d postgres
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if docker compose --env-file .env --env-file .deploy-images.env exec -T postgres pg_isready -U promimi -d promimi; then
+              break
+            fi
+            sleep 3
+          done
+          docker compose --env-file .env --env-file .deploy-images.env run --rm --no-deps api pnpm db:migrate
+          docker compose --env-file .env --env-file .deploy-images.env run --rm --no-deps api pnpm db:seed
           docker compose --env-file .env --env-file .deploy-images.env up -d --remove-orphans --no-build
           for attempt in 1 2 3 4 5 6 7 8 9 10; do
             if docker compose --env-file .env --env-file .deploy-images.env exec -T api node -e "fetch('http://localhost:3001/api/v1/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"; then

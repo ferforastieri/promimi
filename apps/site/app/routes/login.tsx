@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Header } from "../components";
 import { Link } from "react-router";
 
-const api = `${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api/v1`;
+const apiOrigin = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV || typeof window === "undefined" ? "http://localhost:3001" : window.location.origin);
+const api = `${apiOrigin}/api/v1`;
 export default function Login() {
   const [create, setCreate] = useState(false); const [notice, setNotice] = useState("");
   const submit = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); const form = new FormData(event.currentTarget); const payload = { email: String(form.get("email")), password: String(form.get("password")), ...(create ? { name: String(form.get("name")) } : {}) }; try { const response = await fetch(`${api}/auth/${create ? "register" : "login"}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) }); const result = await response.json(); if (!response.ok) throw new Error(result.message); window.localStorage.setItem("promimi_token", result.token); setNotice(create ? "Conta criada. Confira seu e-mail para confirmar o acesso." : "Você entrou. Já pode favoritar e comentar."); } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível entrar."); } };

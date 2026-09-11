@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { Header } from "../components";
-const api = `${import.meta.env.VITE_API_URL ?? "http://localhost:3001"}/api/v1`;
+const apiOrigin = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV || typeof window === "undefined" ? "http://localhost:3001" : window.location.origin);
+const api = `${apiOrigin}/api/v1`;
 export default function Recover() { const [notice, setNotice] = useState(""); const submit = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); const email = String(new FormData(event.currentTarget).get("email")); try { await fetch(`${api}/auth/request-password-reset`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email }) }); setNotice("Se este e-mail estiver cadastrado, enviamos as instruções de recuperação."); } catch { setNotice("Não foi possível solicitar a recuperação agora. Tente novamente."); } }; return <><Header/><main className="auth-page"><div><p className="eyebrow">RECUPERAR ACESSO</p><h1>Vamos achar<br/><em>seu radar.</em></h1><p>Informe seu e-mail. Por segurança, mostramos a mesma confirmação para qualquer endereço.</p></div><form className="auth-card" onSubmit={submit}><h2>Redefinir senha</h2><label>E-mail<input required name="email" type="email" placeholder="voce@exemplo.com"/></label><button>Enviar instruções</button>{notice && <p className="auth-notice">{notice}</p>}<hr/><p><Link to="/entrar">Voltar para entrar</Link></p></form></main></>; }
