@@ -131,12 +131,4 @@ Cada envio para `main` dispara o fluxo de entrega contínua. Ele valida o códig
 
 ## Licença
 
-A licença será definida antes da primeira versão pública estável. A recomendação para este projeto é a **AGPL-3.0-or-later**: qualquer pessoa pode estudar, usar e modificar o código, mas quem oferecer uma versão modificada do Promimi como serviço também deve disponibilizar o código-fonte dessas modificações aos seus usuários. Veja a discussão na próxima seção antes de adotar essa escolha.
-
-## Qual licença faz sentido?
-
-Para um portal que pode ser hospedado como serviço, a recomendação é **GNU Affero General Public License v3.0 ou posterior (AGPL-3.0-or-later)**. Ela protege o caráter aberto do projeto mesmo quando alguém altera o Promimi e o disponibiliza pela internet sem redistribuir os arquivos.
-
-Se a intenção for permitir que empresas criem versões fechadas ou usem partes do projeto em produtos proprietários, a alternativa mais permissiva é a **Apache-2.0**. Ela mantém proteção explícita sobre patentes, mas não obriga a publicar alterações. Para manter controle exclusivo sobre o código e comercializá-lo sem essas permissões, o caminho adequado é uma licença proprietária — não uma licença open source.
-
-> Antes de adicionar `LICENSE`, o titular dos direitos deve confirmar a opção. A licença só pode ser concedida por quem detém os direitos autorais sobre todo o código incluído no repositório.
+Este projeto está licenciado sob a [GNU Affero General Public License v3.0 ou posterior](LICENSE) (`AGPL-3.0-or-later`).
