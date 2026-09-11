@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-const apiOrigin = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV || typeof window === "undefined" ? "http://localhost:3001" : window.location.origin);
-const api = `${apiOrigin}/api/v1`;
+import { apiRequest } from "./lib/api-client";
 type Comment = { id: string; body: string; createdAt: string; author: string };
-async function request(path: string, init: RequestInit = {}) { const token = typeof window === "undefined" ? null : window.localStorage.getItem("promimi_token"); const response = await fetch(`${api}${path}`, { ...init, headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}), ...init.headers } }); const payload = await response.json().catch(() => ({})); if (!response.ok) throw new Error(payload.message ?? "Não foi possível concluir esta ação."); return payload; }
+const request = apiRequest;
 export function OfferActions({ offerId }: { offerId: string }) { const [comments, setComments] = useState<Comment[]>([]); const [message, setMessage] = useState(""); const [text, setText] = useState(""); const [loading, setLoading] = useState(false); const [reporting, setReporting] = useState<string | null>(null); const [reason, setReason] = useState(""); useEffect(() => { request(`/offers/${offerId}/comments`).then((data) => setComments(data.data)).catch(() => undefined); }, [offerId]);
   const favorite = async () => { try { await request(`/offers/${offerId}/favorite`, { method: "POST" }); setMessage("Oferta salva nos seus favoritos."); } catch { setMessage("Entre na sua conta para favoritar esta oferta."); } };
   const comment = async (event: React.FormEvent) => { event.preventDefault(); if (!text.trim()) return; setLoading(true); try { const data = await request(`/offers/${offerId}/comments`, { method: "POST", body: JSON.stringify({ body: text }) }); setComments((items) => [{ ...data.data, author: "Você" }, ...items]); setText(""); setMessage("Comentário publicado."); } catch { setMessage("Entre na sua conta para comentar."); } finally { setLoading(false); } };

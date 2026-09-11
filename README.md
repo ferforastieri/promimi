@@ -31,6 +31,8 @@ Antes de abrir uma mudança, execute `pnpm verify`. Ele confere o histórico das
 
 ## Estrutura
 
+As decisões de arquitetura, limites de domínio e regras de segurança estão em [docs/architecture.md](docs/architecture.md).
+
 - `apps/site`: storefront SSR com React Router.
 - `apps/admin`: painel Vite para a equipe.
 - `apps/whatsapp`: processo isolado para QR, sessão persistente e envio WhatsApp.

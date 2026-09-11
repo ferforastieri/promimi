@@ -9,6 +9,7 @@ import { decryptSecret } from "./crypto.js";
 import { deliverMail, passwordResetMail, verificationMail } from "./mailer.js";
 import { authenticator } from "otplib";
 import { socialCardSvg } from "./social-card.js";
+import { clearSession, establishSession } from "./modules/identity/session.js";
 
 const offerInput = z.object({ title: z.string().min(8).max(240), description: z.string().max(5000).optional(), storeId: z.string().uuid(), categoryId: z.string().uuid().optional().nullable(), currentPrice: z.coerce.number().positive(), originalPrice: z.coerce.number().positive().optional().nullable(), couponCode: z.string().max(64).optional().nullable(), affiliateUrl: z.string().url(), imageUrl: z.string().url().optional().nullable(), expiresAt: z.coerce.date().optional().nullable(), status: z.enum(["DRAFT", "PUBLISHED", "EXPIRED", "PAUSED"]).optional() });
 const slugify = (value: string) => value.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -71,36 +72,37 @@ export async function routes(app: FastifyInstance) {
     return reply.redirect(offer.url, 302);
   });
 
-  app.post("/auth/register", async (request, reply) => {
+  app.post("/auth/register", { config: { rateLimit: { max: 3, timeWindow: "1 hour" } } }, async (request, reply) => {
     const input = z.object({ email: z.string().email(), password: z.string().min(10), name: z.string().min(2).max(120).optional() }).parse(request.body);
     const exists = await db.query.users.findFirst({ where: eq(users.email, input.email.toLowerCase()) });
     if (exists) return reply.code(409).send({ error: "EMAIL_IN_USE", message: "Este e-mail já está cadastrado." });
     const [user] = await db.insert(users).values({ email: input.email.toLowerCase(), passwordHash: await argon2.hash(input.password), name: input.name }).returning();
     const token = await newToken(user.id, "EMAIL_VERIFICATION");
     await deliverMail(verificationMail(user.email, `${publicUrl()}/verificar-email?token=${encodeURIComponent(token)}`));
-    return reply.code(201).send({ token: app.jwt.sign({ id: user.id, role: user.role, email: user.email }), user: { id: user.id, email: user.email, name: user.name, role: user.role }, verificationPending: true });
+    establishSession(app, reply, { id: user.id, role: user.role, email: user.email });
+    return reply.code(201).send({ user: { id: user.id, email: user.email, name: user.name, role: user.role }, verificationPending: true });
   });
-  app.post("/auth/verify-email", async (request, reply) => {
+  app.post("/auth/verify-email", { config: { rateLimit: { max: 10, timeWindow: "1 hour" } } }, async (request, reply) => {
     const { token } = z.object({ token: z.string().min(20) }).parse(request.body);
     const record = await db.query.authTokens.findFirst({ where: and(eq(authTokens.tokenHash, hashToken(token)), eq(authTokens.purpose, "EMAIL_VERIFICATION"), isNull(authTokens.usedAt)) });
     if (!record || record.expiresAt < new Date()) return reply.code(400).send({ error: "INVALID_TOKEN", message: "Este link expirou ou já foi utilizado." });
     await db.transaction(async (tx) => { await tx.update(users).set({ emailVerifiedAt: new Date(), updatedAt: new Date() }).where(eq(users.id, record.userId)); await tx.update(authTokens).set({ usedAt: new Date() }).where(eq(authTokens.id, record.id)); });
     return { ok: true };
   });
-  app.post("/auth/request-password-reset", async (request) => {
+  app.post("/auth/request-password-reset", { config: { rateLimit: { max: 3, timeWindow: "1 hour" } } }, async (request) => {
     const { email } = z.object({ email: z.string().email() }).parse(request.body);
     const user = await db.query.users.findFirst({ where: eq(users.email, email.toLowerCase()) });
     if (user) { const token = await newToken(user.id, "PASSWORD_RESET"); await deliverMail(passwordResetMail(user.email, `${publicUrl()}/redefinir-senha?token=${encodeURIComponent(token)}`)); }
     return { ok: true }; // Same response prevents account enumeration.
   });
-  app.post("/auth/reset-password", async (request, reply) => {
+  app.post("/auth/reset-password", { config: { rateLimit: { max: 5, timeWindow: "1 hour" } } }, async (request, reply) => {
     const body = z.object({ token: z.string().min(20), password: z.string().min(10) }).parse(request.body);
     const record = await db.query.authTokens.findFirst({ where: and(eq(authTokens.tokenHash, hashToken(body.token)), eq(authTokens.purpose, "PASSWORD_RESET"), isNull(authTokens.usedAt)) });
     if (!record || record.expiresAt < new Date()) return reply.code(400).send({ error: "INVALID_TOKEN", message: "Este link expirou ou já foi utilizado." });
     await db.transaction(async (tx) => { await tx.update(users).set({ passwordHash: await argon2.hash(body.password), updatedAt: new Date() }).where(eq(users.id, record.userId)); await tx.update(authTokens).set({ usedAt: new Date() }).where(eq(authTokens.id, record.id)); });
     return { ok: true };
   });
-  app.post("/auth/login", async (request, reply) => {
+  app.post("/auth/login", { config: { rateLimit: { max: 5, timeWindow: "15 minutes" } } }, async (request, reply) => {
     const input = z.object({ email: z.string().email(), password: z.string().min(1), totpCode: z.string().regex(/^\d{6}$/).optional() }).parse(request.body);
     const user = await db.query.users.findFirst({ where: eq(users.email, input.email.toLowerCase()) });
     if (!user || user.deletedAt || !(await argon2.verify(user.passwordHash, input.password))) return reply.code(401).send({ error: "INVALID_CREDENTIALS", message: "E-mail ou senha incorretos." });
@@ -108,7 +110,12 @@ export async function routes(app: FastifyInstance) {
       const secret = decryptSecret<string>(user.totpSecretEncrypted, process.env.INTEGRATION_ENCRYPTION_KEY ?? "development-integration-key-must-be-overridden");
       if (!input.totpCode || !authenticator.verify({ token: input.totpCode, secret })) return reply.code(401).send({ error: "TOTP_REQUIRED", message: "Informe o código do seu autenticador." });
     }
-    return { token: app.jwt.sign({ id: user.id, role: user.role, email: user.email }), user: { id: user.id, email: user.email, name: user.name, role: user.role } };
+    establishSession(app, reply, { id: user.id, role: user.role, email: user.email });
+    return { user: { id: user.id, email: user.email, name: user.name, role: user.role } };
+  });
+  app.post("/auth/logout", { preHandler: requireUser }, async (_request, reply) => {
+    clearSession(reply);
+    return { ok: true };
   });
 
   app.post("/offers/:id/favorite", { preHandler: requireUser }, async (request) => { const { id } = request.params as { id: string }; await db.insert(favorites).values({ userId: request.user.id, offerId: id }).onConflictDoNothing(); return { ok: true }; });
@@ -116,7 +123,7 @@ export async function routes(app: FastifyInstance) {
   app.post("/comments/:id/report", { preHandler: requireUser }, async (request) => { const { id } = request.params as { id: string }; const body = z.object({ reason: z.string().min(3).max(300) }).parse(request.body); await db.insert(reports).values({ commentId: id, reporterId: request.user.id, reason: body.reason }); return { ok: true }; });
   app.get("/me", { preHandler: requireUser }, async (request, reply) => { const user = await db.query.users.findFirst({ where: eq(users.id, request.user.id) }); if (!user || user.deletedAt) return reply.code(404).send({ error: "NOT_FOUND", message: "Conta não encontrada." }); return { data: { id: user.id, email: user.email, name: user.name, role: user.role, emailVerifiedAt: user.emailVerifiedAt } }; });
   app.get("/me/favorites", { preHandler: requireUser }, async (request) => ({ data: await db.query.favorites.findMany({ where: eq(favorites.userId, request.user.id), with: { offer: { with: { store: true, category: true } } }, orderBy: [desc(favorites.createdAt)] }) }));
-  app.delete("/me", { preHandler: requireUser }, async (request) => { const anonymized = `deleted+${request.user.id}@deleted.promimi.invalid`; await db.update(users).set({ email: anonymized, name: null, passwordHash: await argon2.hash(createOpaqueToken()), totpSecretEncrypted: null, totpEnabled: false, deletedAt: new Date(), updatedAt: new Date() }).where(eq(users.id, request.user.id)); return { ok: true }; });
+  app.delete("/me", { preHandler: requireUser, config: { rateLimit: { max: 3, timeWindow: "1 hour" } } }, async (request, reply) => { const anonymized = `deleted+${request.user.id}@deleted.promimi.invalid`; await db.update(users).set({ email: anonymized, name: null, passwordHash: await argon2.hash(createOpaqueToken()), totpSecretEncrypted: null, totpEnabled: false, deletedAt: new Date(), updatedAt: new Date() }).where(eq(users.id, request.user.id)); clearSession(reply); return { ok: true }; });
 
   app.get("/admin/offers", { preHandler: requireStaff }, async () => ({ data: (await db.query.offers.findMany({ with: { store: true, category: true }, orderBy: [desc(offers.updatedAt)] })).map(mapOffer) }));
   app.post("/admin/totp/setup", { preHandler: requireStaff }, async (request, reply) => {

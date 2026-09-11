@@ -20,6 +20,10 @@ request() {
   curl --fail-with-body --silent --show-error "$@"
 }
 
+visitor_cookie=$(mktemp)
+admin_cookie=$(mktemp)
+trap 'rm "$visitor_cookie" "$admin_cookie"' EXIT
+
 contains() {
   [[ "$1" == *"$2"* ]]
 }
@@ -44,27 +48,29 @@ printf '%s' "$offers" | json_get data >/dev/null
 
 echo "3/8: visitante registra, favorita e comenta"
 visitor_email="acceptance-$(date +%s)-$RANDOM@example.test"
-visitor=$(json_body "$visitor_email" 'Senha-de-visitante-aceitacao' 'Visitante de aceitação' | request -X POST "$api_base/auth/register" -H 'content-type: application/json' --data-binary @-)
-visitor_token=$(printf '%s' "$visitor" | json_get token)
+visitor=$(json_body "$visitor_email" 'Senha-de-visitante-aceitacao' 'Visitante de aceitação' | request -c "$visitor_cookie" -X POST "$api_base/auth/register" -H 'content-type: application/json' -H "origin: $site_base" --data-binary @-)
+test "$(printf '%s' "$visitor" | json_get user.role)" = VISITOR
+grep -q 'promimi_session' "$visitor_cookie"
 
 echo "4/8: visitante não acessa publicação administrativa"
-status=$(curl --silent --output /dev/null --write-out '%{http_code}' -X POST "$api_base/admin/offers" -H 'content-type: application/json' -H "authorization: Bearer $visitor_token" --data '{"title":"Oferta que visitante não pode publicar","storeId":"00000000-0000-0000-0000-000000000000","currentPrice":10,"affiliateUrl":"https://example.test"}')
+status=$(curl --silent --output /dev/null --write-out '%{http_code}' -b "$visitor_cookie" -X POST "$api_base/admin/offers" -H 'content-type: application/json' -H "origin: $site_base" --data '{"title":"Oferta que visitante não pode publicar","storeId":"00000000-0000-0000-0000-000000000000","currentPrice":10,"affiliateUrl":"https://example.test"}')
 test "$status" = 403
 
 echo "5/8: equipe autentica e cadastra oferta manual"
-admin=$(json_body "$ACCEPTANCE_ADMIN_EMAIL" "$ACCEPTANCE_ADMIN_PASSWORD" '' | request -X POST "$api_base/auth/login" -H 'content-type: application/json' --data-binary @-)
-admin_token=$(printf '%s' "$admin" | json_get token)
+admin=$(json_body "$ACCEPTANCE_ADMIN_EMAIL" "$ACCEPTANCE_ADMIN_PASSWORD" '' | request -c "$admin_cookie" -X POST "$api_base/auth/login" -H 'content-type: application/json' -H "origin: $site_base" --data-binary @-)
+test "$(printf '%s' "$admin" | json_get user.role)" = ADMIN
+grep -q 'promimi_session' "$admin_cookie"
 offer_payload=$(node -e 'const [storeId,categoryId]=process.argv.slice(1); console.log(JSON.stringify({title:"Oferta de aceitação Promimi",storeId,categoryId,currentPrice:99.9,originalPrice:149.9,couponCode:"ACEITA10",affiliateUrl:"https://example.test/acceptance",status:"PUBLISHED"}))' "$store_id" "$category_id")
-offer=$(printf '%s' "$offer_payload" | request -X POST "$api_base/admin/offers" -H 'content-type: application/json' -H "authorization: Bearer $admin_token" --data-binary @-)
+offer=$(printf '%s' "$offer_payload" | request -b "$admin_cookie" -X POST "$api_base/admin/offers" -H 'content-type: application/json' -H "origin: $site_base" --data-binary @-)
 offer_id=$(printf '%s' "$offer" | json_get data.id)
 offer_slug=$(printf '%s' "$offer" | json_get data.slug)
 
 echo "6/8: oferta publicada permite favorito, comentário, denúncia e redirecionamento rastreável"
-favorite=$(request -X POST "$api_base/offers/$offer_id/favorite" -H "authorization: Bearer $visitor_token")
+favorite=$(request -b "$visitor_cookie" -X POST "$api_base/offers/$offer_id/favorite" -H "origin: $site_base")
 test "$(printf '%s' "$favorite" | json_get ok)" = true
-comment=$(printf '%s' '{"body":"Comentário de aceitação útil e respeitoso."}' | request -X POST "$api_base/offers/$offer_id/comments" -H 'content-type: application/json' -H "authorization: Bearer $visitor_token" --data-binary @-)
+comment=$(printf '%s' '{"body":"Comentário de aceitação útil e respeitoso."}' | request -b "$visitor_cookie" -X POST "$api_base/offers/$offer_id/comments" -H 'content-type: application/json' -H "origin: $site_base" --data-binary @-)
 comment_id=$(printf '%s' "$comment" | json_get data.id)
-report=$(printf '%s' '{"reason":"Teste de denúncia para moderação"}' | request -X POST "$api_base/comments/$comment_id/report" -H 'content-type: application/json' -H "authorization: Bearer $visitor_token" --data-binary @-)
+report=$(printf '%s' '{"reason":"Teste de denúncia para moderação"}' | request -b "$visitor_cookie" -X POST "$api_base/comments/$comment_id/report" -H 'content-type: application/json' -H "origin: $site_base" --data-binary @-)
 test "$(printf '%s' "$report" | json_get ok)" = true
 published=$(request "$api_base/offers/$offer_slug")
 test "$(printf '%s' "$published" | json_get id)" = "$offer_id"
@@ -74,7 +80,7 @@ redirect_status=$(curl --silent --output /dev/null --write-out '%{http_code}' "$
 test "$redirect_status" = 302
 
 echo "7/8: painel expira a oferta"
-expired=$(printf '%s' '{"status":"EXPIRED"}' | request -X PATCH "$api_base/admin/offers/$offer_id" -H 'content-type: application/json' -H "authorization: Bearer $admin_token" --data-binary @-)
+expired=$(printf '%s' '{"status":"EXPIRED"}' | request -b "$admin_cookie" -X PATCH "$api_base/admin/offers/$offer_id" -H 'content-type: application/json' -H "origin: $site_base" --data-binary @-)
 test "$(printf '%s' "$expired" | json_get data.status)" = EXPIRED
 expired_status=$(curl --silent --output /dev/null --write-out '%{http_code}' "$api_base/offers/$offer_slug")
 test "$expired_status" = 404
