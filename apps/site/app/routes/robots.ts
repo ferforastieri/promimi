@@ -1,0 +1,1 @@
+export function loader() { const origin = process.env.APP_URL ?? "http://localhost:3000"; return new Response(`User-agent: *\nAllow: /\nDisallow: /conta\nDisallow: /entrar\nDisallow: /recuperar-acesso\nSitemap: ${origin}/sitemap.xml\n`, { headers: { "content-type": "text/plain" } }); }

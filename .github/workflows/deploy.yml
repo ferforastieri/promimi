@@ -1,0 +1,104 @@
+name: Verify and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify source
+        run: pnpm verify
+
+      - name: Build immutable deployment images
+        env:
+          TAG: ${{ github.sha }}
+        run: |
+          docker build -f infra/Dockerfile.api -t promimi-api:$TAG .
+          docker build -f infra/Dockerfile.worker -t promimi-worker:$TAG .
+          docker build -f infra/Dockerfile.site -t promimi-site:$TAG .
+          docker build -f infra/Dockerfile.admin -t promimi-admin:$TAG .
+          docker build -f infra/Dockerfile.whatsapp -t promimi-whatsapp:$TAG .
+
+      - name: Configure SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" 'true'
+
+      - name: Transfer deployment manifest and source
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          rsync -az --delete \
+            --exclude '.env' --exclude '.git' --exclude 'node_modules' --exclude 'build' \
+            --exclude 'dist' --exclude '.turbo' --exclude 'coverage' \
+            ./ "$DEPLOY_USER@$DEPLOY_HOST:/home/$DEPLOY_USER/promimi/"
+
+      - name: Transfer prebuilt images
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          TAG: ${{ github.sha }}
+        run: |
+          docker save promimi-api:$TAG promimi-worker:$TAG promimi-site:$TAG promimi-admin:$TAG promimi-whatsapp:$TAG \
+            | gzip -1 \
+            | ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" 'gzip -d | docker load'
+
+      - name: Start and smoke-test production stack
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          TAG: ${{ github.sha }}
+        run: |
+          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "TAG=$TAG bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd /home/promimi/promimi
+          umask 077
+          printf '%s\n' \
+            "PROMIMI_API_IMAGE=promimi-api:$TAG" \
+            "PROMIMI_WORKER_IMAGE=promimi-worker:$TAG" \
+            "PROMIMI_SITE_IMAGE=promimi-site:$TAG" \
+            "PROMIMI_ADMIN_IMAGE=promimi-admin:$TAG" \
+            "PROMIMI_WHATSAPP_IMAGE=promimi-whatsapp:$TAG" > .deploy-images.env
+          docker compose --env-file .env --env-file .deploy-images.env up -d --remove-orphans --no-build
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if docker compose --env-file .env --env-file .deploy-images.env exec -T api node -e "fetch('http://localhost:3001/api/v1/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"; then
+              exit 0
+            fi
+            sleep 3
+          done
+          docker compose --env-file .env --env-file .deploy-images.env ps
+          exit 1
+          REMOTE

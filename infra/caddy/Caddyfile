@@ -1,0 +1,12 @@
+{$DOMAIN:localhost} {
+  encode zstd gzip
+  reverse_proxy site:3000
+}
+
+admin.{$DOMAIN:localhost} {
+  reverse_proxy admin:4173
+}
+
+api.{$DOMAIN:localhost} {
+  reverse_proxy api:3001
+}

@@ -1,0 +1,32 @@
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import jwt from "@fastify/jwt";
+import rateLimit from "@fastify/rate-limit";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
+import { ZodError } from "zod";
+import { loadConfig } from "@promimi/config";
+import { routes } from "./routes.js";
+import { bootstrapAdmin } from "./bootstrap.js";
+import { installMetrics } from "./metrics.js";
+import "./types.js";
+
+const config = loadConfig();
+const app = Fastify({ logger: true });
+const allowedOrigins = new Set([config.APP_URL, process.env.ADMIN_URL, "http://localhost:3000", "http://localhost:5173"].filter(Boolean));
+await app.register(cors, { origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)) });
+await app.register(jwt, { secret: config.JWT_SECRET });
+await app.register(rateLimit, { max: 120, timeWindow: "1 minute" });
+await app.register(swagger, { openapi: { info: { title: "Promimi API", version: "v1" }, servers: [{ url: "/api/v1" }] } });
+await app.register(swaggerUi, { routePrefix: "/docs" });
+installMetrics(app);
+app.setErrorHandler((error, _request, reply) => {
+  if (error instanceof ZodError) return reply.code(400).send({ error: "VALIDATION_ERROR", message: "Revise os campos informados.", details: error.flatten() });
+  const appError = error as { statusCode?: number; message?: string };
+  const statusCode = appError.statusCode && appError.statusCode >= 400 ? appError.statusCode : 500;
+  if (statusCode >= 500) app.log.error(error);
+  return reply.code(statusCode).send({ error: statusCode >= 500 ? "INTERNAL_ERROR" : "REQUEST_ERROR", message: statusCode >= 500 ? "Não foi possível concluir esta ação." : appError.message ?? "A solicitação não pôde ser concluída." });
+});
+await app.register(routes, { prefix: "/api/v1" });
+await bootstrapAdmin();
+await app.listen({ port: config.PORT, host: "0.0.0.0" });

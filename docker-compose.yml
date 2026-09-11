@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: promimi
+      POSTGRES_USER: promimi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-promimi}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U promimi -d promimi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  api:
+    image: ${PROMIMI_API_IMAGE:-promimi-api:local}
+    build: { context: ., dockerfile: infra/Dockerfile.api }
+    env_file: ${PROMIMI_ENV_FILE:-.env}
+    depends_on: { postgres: { condition: service_healthy } }
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3001/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  worker:
+    image: ${PROMIMI_WORKER_IMAGE:-promimi-worker:local}
+    build: { context: ., dockerfile: infra/Dockerfile.worker }
+    env_file: ${PROMIMI_ENV_FILE:-.env}
+    depends_on: { postgres: { condition: service_healthy } }
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"process.exit(0)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  whatsapp:
+    image: ${PROMIMI_WHATSAPP_IMAGE:-promimi-whatsapp:local}
+    build: { context: ., dockerfile: infra/Dockerfile.whatsapp }
+    profiles: ["whatsapp"]
+    environment:
+      WHATSAPP_BRIDGE_TOKEN: ${WHATSAPP_BRIDGE_TOKEN}
+      WHATSAPP_SESSION_PATH: /data/session
+    volumes:
+      - whatsapp_session:/data/session
+    restart: unless-stopped
+  site:
+    image: ${PROMIMI_SITE_IMAGE:-promimi-site:local}
+    build: { context: ., dockerfile: infra/Dockerfile.site }
+    environment: { API_URL: http://api:3001 }
+    depends_on: [api]
+    restart: unless-stopped
+  admin:
+    image: ${PROMIMI_ADMIN_IMAGE:-promimi-admin:local}
+    build: { context: ., dockerfile: infra/Dockerfile.admin }
+    restart: unless-stopped
+  caddy:
+    image: caddy:2.8-alpine
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [site, admin, api]
+    restart: unless-stopped
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    profiles: ["monitoring"]
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+  prometheus_data:
+  whatsapp_session:

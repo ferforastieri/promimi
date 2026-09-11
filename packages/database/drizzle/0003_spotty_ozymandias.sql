@@ -1,0 +1,1 @@
+ALTER TABLE "routines" ADD COLUMN "schedule_cron" varchar(80) DEFAULT '0 * * * *' NOT NULL;

@@ -1,0 +1,16 @@
+{
+  "name": "@promimi/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./schema": "./src/schema.ts" },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
+    "check": "drizzle-kit check",
+    "seed": "tsx src/seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": { "dotenv": "^16.6.1", "drizzle-orm": "^0.44.2", "pg": "^8.16.0" },
+  "devDependencies": { "@types/node": "^22.15.3", "@types/pg": "^8.15.4", "drizzle-kit": "^0.31.1", "tsx": "^4.19.3", "typescript": "^5.8.3" }
+}
