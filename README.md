@@ -30,6 +30,7 @@ Oferta → revisão e organização → publicação no site → distribuição 
 | **API**                   | Centraliza autenticação, regras do negócio, permissões e os dados utilizados pelos dois frontends.        |
 | **Worker**                | Executa as tarefas em segundo plano: agendamentos, expiração de ofertas e entregas automáticas.           |
 | **Bridge WhatsApp**       | Serviço isolado e opcional para integrar o canal sem misturar a sessão do WhatsApp à aplicação principal. |
+| **App Android**           | Aplicativo Capacitor que apresenta a mesma experiência do site público em um contêiner nativo.            |
 
 ## Como as partes se conectam
 
@@ -67,6 +68,7 @@ apps/
   api/        regras do produto e endpoints
   worker/     tarefas assíncronas e automações
   whatsapp/   integração opcional, isolada
+  mobile/     aplicativo Android Capacitor
 
 packages/
   design-system/  marca e componentes visuais compartilhados
@@ -84,7 +86,7 @@ docs/         decisões, arquitetura, operação e segurança
 - A API aplica proteção contra CSRF, limitação de requisições, validação de entradas e cabeçalhos de segurança.
 - Os serviços que atendem o público ficam atrás de um proxy HTTPS; banco de dados e comunicação interna não são expostos diretamente.
 - A integração com WhatsApp vive em processo separado para reduzir o impacto de falhas e facilitar sua operação.
-- O deploy produz imagens imutáveis e a publicação é feita pelo GitHub Actions a partir da branch `main`.
+- O deploy publica imagens imutáveis apenas dos serviços afetados pela alteração; documentação não aciona produção.
 
 Os detalhes técnicos e as decisões que sustentam essas escolhas estão em [docs/architecture.md](docs/architecture.md), [docs/security.md](docs/security.md) e [docs/operations.md](docs/operations.md).
 
@@ -120,7 +122,9 @@ Esse comando verifica o banco, os tipos, os testes e os builds de todos os aplic
 
 ## Publicação
 
-Cada envio para `main` dispara o fluxo de entrega contínua. Ele valida o código, cria imagens versionadas dos serviços, publica-as no GitHub Container Registry e atualiza a stack no servidor configurado. Informações operacionais e as variáveis necessárias estão em [infra/OPERATIONS.md](infra/OPERATIONS.md).
+Cada envio para `main` identifica os aplicativos afetados. Alterações de documentação terminam após essa análise; alterações de código validam apenas os pacotes relacionados, criam somente as imagens necessárias e atualizam somente os serviços correspondentes no servidor.
+
+Quando o site ou o app móvel mudar, o workflow também pode gerar um APK Android. Para isso, cadastre a variável pública `MOBILE_SITE_URL` no repositório do GitHub com a URL HTTPS do site. O artefato fica disponível na execução do GitHub Actions; a assinatura e o envio para a Play Store permanecem uma etapa separada. Informações operacionais estão em [infra/OPERATIONS.md](infra/OPERATIONS.md).
 
 ## Documentação
 

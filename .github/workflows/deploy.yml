@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      mobile_site_url:
+        description: Public HTTPS URL loaded by the Android app
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -14,9 +19,114 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify-and-deploy:
+  changes:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    outputs:
+      code: ${{ steps.plan.outputs.code }}
+      deployment: ${{ steps.plan.outputs.deployment }}
+      services: ${{ steps.plan.outputs.services }}
+      migrations: ${{ steps.plan.outputs.migrations }}
+      stack: ${{ steps.plan.outputs.stack }}
+      mobile: ${{ steps.filter.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            shared:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'tsconfig.base.json'
+              - 'turbo.json'
+              - 'packages/config/**'
+            api:
+              - 'apps/api/**'
+              - 'packages/database/**'
+              - 'infra/Dockerfile.api'
+            worker:
+              - 'apps/worker/**'
+              - 'packages/database/**'
+              - 'infra/Dockerfile.worker'
+            site:
+              - 'apps/site/**'
+              - 'packages/design-system/**'
+              - 'packages/query/**'
+              - 'infra/Dockerfile.site'
+            admin:
+              - 'apps/admin/**'
+              - 'packages/design-system/**'
+              - 'packages/query/**'
+              - 'infra/Dockerfile.admin'
+            whatsapp:
+              - 'apps/whatsapp/**'
+              - 'infra/Dockerfile.whatsapp'
+            stack:
+              - 'docker-compose.yml'
+              - 'infra/caddy/**'
+              - 'infra/compose/**'
+              - 'infra/monitoring/**'
+              - 'infra/prometheus/**'
+            mobile:
+              - 'apps/mobile/**'
+              - 'apps/site/**'
+              - 'packages/design-system/**'
+              - 'packages/query/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+
+      - id: plan
+        env:
+          SHARED: ${{ steps.filter.outputs.shared }}
+          API: ${{ steps.filter.outputs.api }}
+          WORKER: ${{ steps.filter.outputs.worker }}
+          SITE: ${{ steps.filter.outputs.site }}
+          ADMIN: ${{ steps.filter.outputs.admin }}
+          WHATSAPP: ${{ steps.filter.outputs.whatsapp }}
+          STACK: ${{ steps.filter.outputs.stack }}
+          MOBILE: ${{ steps.filter.outputs.mobile }}
+        run: |
+          services=()
+          if [ "$SHARED" = "true" ]; then
+            services=(api worker site admin whatsapp)
+          else
+            [ "$API" = "true" ] && services+=(api)
+            [ "$WORKER" = "true" ] && services+=(worker)
+            [ "$SITE" = "true" ] && services+=(site)
+            [ "$ADMIN" = "true" ] && services+=(admin)
+            [ "$WHATSAPP" = "true" ] && services+=(whatsapp)
+          fi
+
+          if [ "${#services[@]}" -gt 0 ] || [ "$STACK" = "true" ]; then
+            echo "deployment=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deployment=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ "$SHARED" = "true" ] || [ "$API" = "true" ]; then
+            echo "migrations=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "migrations=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ "$SHARED" = "true" ] || [ "$API" = "true" ] || [ "$WORKER" = "true" ] || [ "$SITE" = "true" ] || [ "$ADMIN" = "true" ] || [ "$WHATSAPP" = "true" ] || [ "$MOBILE" = "true" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "services=${services[*]}" >> "$GITHUB_OUTPUT"
+
+  verify:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -32,21 +142,42 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify source
-        run: pnpm verify
+      - name: Verify affected packages
+        run: pnpm exec turbo run typecheck test build --affected
 
-      - name: Build immutable deployment images
+      - name: Check database schema
+        if: needs.changes.outputs.migrations == 'true'
+        run: pnpm --filter @promimi/database check
+
+  build-images:
+    needs: [changes, verify]
+    if: always() && needs.changes.outputs.services != '' && (needs.verify.result == 'success' || needs.verify.result == 'skipped')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and publish changed service images
         env:
+          SERVICES: ${{ needs.changes.outputs.services }}
           TAG: ${{ github.sha }}
           REGISTRY: ghcr.io
           REPOSITORY: ${{ github.repository }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "$GHCR_TOKEN" | docker login "$REGISTRY" -u "$GITHUB_ACTOR" --password-stdin
-          for service in api worker site admin whatsapp; do
+          for service in $SERVICES; do
             docker build -f "infra/Dockerfile.$service" -t "$REGISTRY/$REPOSITORY/$service:$TAG" .
             docker push "$REGISTRY/$REPOSITORY/$service:$TAG"
           done
+
+  deploy:
+    needs: [changes, verify, build-images]
+    if: always() && needs.changes.outputs.deployment == 'true' && (needs.verify.result == 'success' || needs.verify.result == 'skipped') && (needs.build-images.result == 'success' || needs.build-images.result == 'skipped')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Configure SSH
         env:
@@ -61,49 +192,110 @@ jobs:
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
           ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" 'true'
 
-      - name: Transfer deployment manifest and source
+      - name: Transfer deployment manifests
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
-          rsync -az --delete \
-            --exclude '.env' --exclude '.git' --exclude 'node_modules' --exclude 'build' \
-            --exclude 'dist' --exclude '.turbo' --exclude 'coverage' \
-            ./ "$DEPLOY_USER@$DEPLOY_HOST:/home/$DEPLOY_USER/promimi/"
+          rsync -az --delete infra/ "$DEPLOY_USER@$DEPLOY_HOST:/home/$DEPLOY_USER/promimi/infra/"
+          rsync -az docker-compose.yml "$DEPLOY_USER@$DEPLOY_HOST:/home/$DEPLOY_USER/promimi/docker-compose.yml"
 
-      - name: Start and smoke-test production stack
+      - name: Update changed services
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          SERVICES: ${{ needs.changes.outputs.services }}
+          MIGRATIONS: ${{ needs.changes.outputs.migrations }}
+          STACK: ${{ needs.changes.outputs.stack }}
           TAG: ${{ github.sha }}
           REPOSITORY: ${{ github.repository }}
         run: |
-          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "TAG=$TAG REPOSITORY=$REPOSITORY bash -s" <<'REMOTE'
+          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "SERVICES='$SERVICES' MIGRATIONS='$MIGRATIONS' STACK='$STACK' TAG='$TAG' REPOSITORY='$REPOSITORY' bash -s" <<'REMOTE'
           set -euo pipefail
           cd "$HOME/promimi"
           umask 077
-          printf '%s\n' \
-            "PROMIMI_API_IMAGE=ghcr.io/$REPOSITORY/api:$TAG" \
-            "PROMIMI_WORKER_IMAGE=ghcr.io/$REPOSITORY/worker:$TAG" \
-            "PROMIMI_SITE_IMAGE=ghcr.io/$REPOSITORY/site:$TAG" \
-            "PROMIMI_ADMIN_IMAGE=ghcr.io/$REPOSITORY/admin:$TAG" \
-            "PROMIMI_WHATSAPP_IMAGE=ghcr.io/$REPOSITORY/whatsapp:$TAG" > .deploy-images.env
-          docker compose --env-file .env --env-file .deploy-images.env pull
-          docker compose --env-file .env --env-file .deploy-images.env up -d postgres
-          for attempt in 1 2 3 4 5 6 7 8 9 10; do
-            if docker compose --env-file .env --env-file .deploy-images.env exec -T postgres pg_isready -U promimi -d promimi; then
-              break
-            fi
-            sleep 3
+          touch .deploy-images.env
+
+          for service in $SERVICES; do
+            image_var="PROMIMI_$(printf '%s' "$service" | tr '[:lower:]' '[:upper:]')_IMAGE"
+            sed -i "/^$image_var=/d" .deploy-images.env
+            printf '%s=ghcr.io/%s/%s:%s\n' "$image_var" "$REPOSITORY" "$service" "$TAG" >> .deploy-images.env
           done
-          docker compose --env-file .env --env-file .deploy-images.env run --rm --no-deps api pnpm db:migrate
-          docker compose --env-file .env --env-file .deploy-images.env up -d --remove-orphans --no-build --force-recreate
-          for attempt in 1 2 3 4 5 6 7 8 9 10; do
-            if docker compose --env-file .env --env-file .deploy-images.env exec -T api node -e "fetch('http://localhost:3001/api/v1/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"; then
-              exit 0
-            fi
-            sleep 3
-          done
+
+          if [ -n "$SERVICES" ]; then
+            docker compose --env-file .env --env-file .deploy-images.env pull $SERVICES
+          fi
+
+          if [ "$MIGRATIONS" = "true" ]; then
+            docker compose --env-file .env --env-file .deploy-images.env up -d postgres
+            for attempt in 1 2 3 4 5 6 7 8 9 10; do
+              if docker compose --env-file .env --env-file .deploy-images.env exec -T postgres pg_isready -U promimi -d promimi; then
+                break
+              fi
+              sleep 3
+            done
+            docker compose --env-file .env --env-file .deploy-images.env run --rm --no-deps api pnpm db:migrate
+          fi
+
+          if [ -n "$SERVICES" ]; then
+            docker compose --env-file .env --env-file .deploy-images.env up -d --no-deps --force-recreate $SERVICES
+          fi
+
+          if [ "$STACK" = "true" ]; then
+            docker compose --env-file .env --env-file .deploy-images.env up -d --force-recreate caddy
+          fi
+
+          case " $SERVICES " in
+            *" api "*)
+              healthy=false
+              for attempt in 1 2 3 4 5 6 7 8 9 10; do
+                if docker compose --env-file .env --env-file .deploy-images.env exec -T api node -e "fetch('http://localhost:3001/api/v1/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"; then
+                  healthy=true
+                  break
+                fi
+                sleep 3
+              done
+              [ "$healthy" = "true" ] || exit 1
+              ;;
+          esac
+
           docker compose --env-file .env --env-file .deploy-images.env ps
-          exit 1
           REMOTE
+
+  mobile:
+    needs: [changes, verify]
+    if: always() && needs.changes.outputs.mobile == 'true' && (vars.MOBILE_SITE_URL != '' || inputs.mobile_site_url != '') && (needs.verify.result == 'success' || needs.verify.result == 'skipped')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Android APK
+        env:
+          PROMIMI_MOBILE_SITE_URL: ${{ inputs.mobile_site_url || vars.MOBILE_SITE_URL }}
+        run: pnpm --filter @promimi/mobile android:apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: promimi-android-apk-${{ github.sha }}
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+          retention-days: 14
