@@ -5,11 +5,12 @@ import { categories, db, integrations, offers, publications, routineExecutions, 
 import { deliver } from "./connectors.js";
 import { candidateDiscount, collectFeed, isEligible, slugify, type CandidateOffer, type RoutineFilters } from "./marketplaces.js";
 import type { PublicationOffer } from "./templates.js";
+import { registerOutboxRelay } from "./jobs/outbox-relay.js";
 
 const config = loadConfig();
 const boss = new PgBoss({ connectionString: config.DATABASE_URL });
 await boss.start();
-for (const queue of ["deliver-publication", "run-routine", "reconcile-publications", "expire-offers", "sync-routine-schedules", "queue-manual-routines"]) await boss.createQueue(queue);
+for (const queue of ["deliver-publication", "run-routine", "reconcile-publications", "expire-offers", "sync-routine-schedules", "queue-manual-routines", "dispatch-outbox"]) await boss.createQueue(queue);
 
 type DeliveryJob = { publicationId: string };
 type RoutineJob = { routineId: string; executionId?: string };
@@ -122,8 +123,11 @@ await boss.work("queue-manual-routines", async () => {
   for (const execution of queued) await boss.send("run-routine", { routineId: execution.routineId, executionId: execution.id } satisfies RoutineJob, { singletonKey: `manual-routine:${execution.id}` });
 });
 
+await registerOutboxRelay(boss, queueDelivery);
+
 await boss.schedule("reconcile-publications", "*/2 * * * *", {}, { tz: "America/Sao_Paulo" });
 await boss.schedule("expire-offers", "*/15 * * * *", {}, { tz: "America/Sao_Paulo" });
 await boss.schedule("sync-routine-schedules", "* * * * *", {}, { tz: "America/Sao_Paulo" });
 await boss.schedule("queue-manual-routines", "* * * * *", {}, { tz: "America/Sao_Paulo" });
-console.info("Promimi worker ready: delivery retries, reconciliation, offer expiry and routines are active.");
+await boss.schedule("dispatch-outbox", "* * * * *", {}, { tz: "America/Sao_Paulo" });
+console.info("Promimi worker ready: outbox relay, delivery retries, reconciliation, offer expiry and routines are active.");

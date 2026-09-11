@@ -1,0 +1,15 @@
+import type { FastifyInstance } from "fastify";
+import { desc, eq } from "drizzle-orm";
+import { db, integrations, routineExecutions, routines } from "@promimi/database";
+import { z } from "zod";
+import { requireStaff } from "../../auth.js";
+
+/** Automation boundary: routines and global pause control. The worker owns execution. */
+export async function registerAutomationHttp(app: FastifyInstance) {
+  app.get("/admin/routines", { preHandler: requireStaff }, async () => ({ data: await db.query.routines.findMany({ with: { routineExecutions: { orderBy: [desc(routineExecutions.createdAt)], limit: 5 } }, orderBy: [desc(routines.updatedAt)] }) }));
+  app.post("/admin/routines", { preHandler: requireStaff }, async (request, reply) => { const body = z.object({ name: z.string().min(3).max(120), enabled: z.boolean().default(false), scheduleCron: z.string().trim().regex(/^(\S+\s+){4}\S+$/, "Use cinco campos cron.").default("0 * * * *"), filters: z.record(z.unknown()).default({}), destinations: z.array(z.string()).default([]), dailyLimit: z.number().int().min(1).max(100).default(100) }).parse(request.body); const [routine] = await db.insert(routines).values(body).returning(); return reply.code(201).send({ data: routine }); });
+  app.patch("/admin/routines/:id", { preHandler: requireStaff }, async (request) => { const { id } = request.params as { id: string }; const body = z.object({ name: z.string().min(3).max(120).optional(), enabled: z.boolean().optional(), scheduleCron: z.string().trim().regex(/^(\S+\s+){4}\S+$/, "Use cinco campos cron.").optional(), filters: z.record(z.unknown()).optional(), destinations: z.array(z.string()).optional(), dailyLimit: z.number().int().min(1).max(100).optional() }).parse(request.body); const [routine] = await db.update(routines).set({ ...body, updatedAt: new Date() }).where(eq(routines.id, id)).returning(); return { data: routine }; });
+  app.post("/admin/routines/:id/run", { preHandler: requireStaff }, async (request, reply) => { const { id } = request.params as { id: string }; const routine = await db.query.routines.findFirst({ where: eq(routines.id, id) }); if (!routine) return reply.code(404).send({ error: "NOT_FOUND", message: "Rotina não encontrada." }); const [execution] = await db.insert(routineExecutions).values({ routineId: id, status: "QUEUED" }).returning(); return reply.code(202).send({ data: execution, message: "Execução adicionada à fila do worker." }); });
+  app.get("/admin/automation", { preHandler: requireStaff }, async () => { const control = await db.query.integrations.findFirst({ where: eq(integrations.provider, "automation") }); return { data: { paused: control ? !control.enabled : false } }; });
+  app.put("/admin/automation", { preHandler: requireStaff }, async (request) => { const { paused } = z.object({ paused: z.boolean() }).parse(request.body); await db.insert(integrations).values({ provider: "automation", enabled: !paused, settings: {} }).onConflictDoUpdate({ target: integrations.provider, set: { enabled: !paused, updatedAt: new Date() } }); return { data: { paused } }; });
+}

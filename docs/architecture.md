@@ -44,8 +44,10 @@ O diretório de destino é `apps/api/src/modules/<domínio>/`. Cada módulo deve
 
 ## Assíncrono e confiabilidade
 
-O worker consome filas pg-boss no mesmo PostgreSQL para rotina, expiração e publicação. A evolução seguinte é uma outbox transacional: publicar uma oferta grava a oferta e um evento na mesma transação; o worker consome o evento sem depender de varredura periódica.
+O worker consome filas pg-boss no mesmo PostgreSQL para rotina, expiração e publicação. A outbox transacional já está ativa: publicar uma oferta grava oferta, publicações e eventos na mesma transação; o relay do worker só confirma o evento depois de enfileirá-lo.
 
 ## Operação
 
 GitHub Actions verifica, gera imagens imutáveis, executa migrações e sobe o Compose. O servidor só aceita HTTPS através do Caddy. Segredos ficam no ambiente do servidor e nos Secrets do GitHub, nunca no repositório.
+
+Consulte também os ADRs em [`docs/adr`](./adr), o [guia de segurança](./security.md) e o [runbook](./operations.md).

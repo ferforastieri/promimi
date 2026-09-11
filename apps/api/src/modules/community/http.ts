@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { and, desc, eq } from "drizzle-orm";
 import { comments, db, favorites, reports } from "@promimi/database";
 import { z } from "zod";
-import { requireUser } from "../../auth.js";
+import { requireStaff, requireUser } from "../../auth.js";
 
 /** Community boundary: favorites, comments and moderation reports. */
 export async function registerCommunityHttp(app: FastifyInstance) {
@@ -27,5 +27,10 @@ export async function registerCommunityHttp(app: FastifyInstance) {
     const body = z.object({ reason: z.string().min(3).max(300) }).parse(request.body);
     await db.insert(reports).values({ commentId: id, reporterId: request.user.id, reason: body.reason });
     return { ok: true };
+  });
+  app.get("/admin/comments", { preHandler: requireStaff }, async () => ({ data: await db.query.comments.findMany({ with: { user: true, offer: true }, orderBy: [desc(comments.createdAt)] }) }));
+  app.patch("/admin/comments/:id", { preHandler: requireStaff }, async (request) => {
+    const { id } = request.params as { id: string }; const { isHidden } = z.object({ isHidden: z.boolean() }).parse(request.body);
+    const [comment] = await db.update(comments).set({ isHidden, updatedAt: new Date() }).where(eq(comments.id, id)).returning(); return { data: comment };
   });
 }

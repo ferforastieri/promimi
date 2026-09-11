@@ -1,1 +1,1 @@
-{"root":["./src/main.tsx","./src/lib/api-client.ts","./vite.config.ts"],"version":"5.9.3"}
+{"root":["./src/main.tsx","./src/features/analytics/api.ts","./src/features/automation/api.ts","./src/features/catalog/api.ts","./src/features/identity/api.ts","./src/features/integrations/api.ts","./src/features/publishing/api.ts","./src/lib/api-client.ts","./vite.config.ts"],"version":"5.9.3"}

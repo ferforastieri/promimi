@@ -6,7 +6,7 @@ set -euo pipefail
 backup_stamp=$(date -u +%Y-%m-%dT%H%M%SZ)
 backup_file="/tmp/promimi-${backup_stamp}.sql.gz"
 session_file="/tmp/promimi-${backup_stamp}-whatsapp-session.tar.gz"
-trap 'rm -f "$backup_file" "$backup_file.age" "$session_file" "$session_file.age"' EXIT
+trap 'rm "$backup_file" "$backup_file.age" "$session_file" "$session_file.age" 2>/dev/null || true' EXIT
 docker compose exec -T postgres pg_dump -U promimi promimi | gzip > "$backup_file"
 age -r "$AGE_RECIPIENT" -o "$backup_file.age" "$backup_file"
 rclone copy "$backup_file.age" "$BACKUP_TARGET/daily/"
