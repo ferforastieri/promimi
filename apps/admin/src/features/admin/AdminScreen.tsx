@@ -118,7 +118,7 @@ export function AdminScreen() {
           </button>
         </div>
       </aside>
-      <section className="mx-auto w-full max-w-7xl p-5 sm:p-8 lg:p-10">
+      <section className="w-full px-4 py-5 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <header className="mb-8 flex items-start justify-between gap-4">
           <div>
             <p className="mb-1 font-mono text-[10px] tracking-[.14em] text-ink/45">OPERAÇÃO EM HORÁRIO DE BRASÍLIA</p>
