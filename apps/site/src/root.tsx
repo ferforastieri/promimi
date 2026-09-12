@@ -1,13 +1,13 @@
 import { useEffect } from "react";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import { PromimiQueryProvider } from "@promimi/query";
-import { AppFrame, brandMarkSource, ToastProvider } from "@promimi/design-system";
+import { AppFrame, brandFaviconSource, ToastProvider } from "@promimi/design-system";
 import "./tailwind.css";
 
 export const links = () => [
   { rel: "manifest", href: "/manifest.webmanifest" },
-  { rel: "icon", type: "image/png", href: brandMarkSource },
-  { rel: "apple-touch-icon", href: brandMarkSource },
+  { rel: "icon", type: "image/png", sizes: "48x48", href: brandFaviconSource },
+  { rel: "apple-touch-icon", href: brandFaviconSource },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",

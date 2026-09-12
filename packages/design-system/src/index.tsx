@@ -14,4 +14,4 @@ export { NotFoundPage } from "./components/NotFoundPage.js";
 export { ToastProvider, useToast } from "./components/Toast.js";
 export { designTokens } from "./tokens.js";
 export { BrandMark } from "./brand/BrandMark.js";
-export { brandMarkSource } from "./brand/asset.js";
+export { brandFaviconSource, brandMarkSource } from "./brand/asset.js";

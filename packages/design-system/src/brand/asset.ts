@@ -1,4 +1,5 @@
 import brandMarkSource from "./promimi.png";
+import brandFaviconSource from "./assets/favicon-48.png";
 
-/** Canonical raster asset for browser icons and the BrandMark component. */
-export { brandMarkSource };
+/** Browser-facing assets generated from the single canonical PNG. */
+export { brandFaviconSource, brandMarkSource };
