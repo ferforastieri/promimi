@@ -57,6 +57,8 @@ services:
   admin:
     image: ${PROMIMI_ADMIN_IMAGE:-promimi-admin:local}
     build: { context: ., dockerfile: infra/Dockerfile.admin }
+    environment:
+      ADMIN_PREVIEW_ALLOWED_HOSTS: ${ADMIN_PREVIEW_ALLOWED_HOSTS:-}
     restart: unless-stopped
   caddy:
     image: caddy:2.8-alpine
