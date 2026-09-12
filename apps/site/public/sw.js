@@ -1,5 +1,5 @@
-const CACHE = "promimi-site-v1";
-const SHELL = ["/", "/brand/promimi.png"];
+const CACHE = "promimi-site-v2";
+const SHELL = ["/", "/brand/icon-192.png", "/brand/icon-512.png"];
 self.addEventListener("install", (event) => event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", (event) => {

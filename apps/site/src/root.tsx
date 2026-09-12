@@ -6,8 +6,9 @@ import "./tailwind.legacy.css";
 
 export const links = () => [
   { rel: "manifest", href: "/manifest.webmanifest" },
-  { rel: "icon", type: "image/png", href: "/brand/promimi.png" },
-  { rel: "apple-touch-icon", href: "/brand/promimi.png" },
+  { rel: "icon", type: "image/png", sizes: "192x192", href: "/brand/icon-192.png" },
+  { rel: "icon", type: "image/png", sizes: "512x512", href: "/brand/icon-512.png" },
+  { rel: "apple-touch-icon", sizes: "192x192", href: "/brand/icon-192.png" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
