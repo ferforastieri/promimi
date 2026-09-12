@@ -1,7 +1,4 @@
-const apiOrigin =
-  import.meta.env.VITE_API_URL ??
-  (import.meta.env.DEV ? "http://localhost:3001" : window.location.origin);
-export const apiBase = `${apiOrigin}/api/v1`;
+export const apiBase = "/api/v1";
 
 export class ApiError extends Error {
   constructor(

@@ -4,13 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "sync": "cap sync android",
+    "sync": "pnpm --filter @promimi/infrastructure build && cap sync android",
     "android:debug": "pnpm sync && cd android && ./gradlew assembleDebug",
-    "android:apk": "node scripts/require-site-url.mjs && pnpm sync && cd android && ./gradlew assembleRelease"
+    "android:apk": "pnpm exec tsx -e \"import { loadMobileReleaseConfig } from '@promimi/infrastructure/config/mobile'; loadMobileReleaseConfig()\" && pnpm sync && cd android && ./gradlew assembleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
-    "@capacitor/core": "^8.0.0"
+    "@capacitor/core": "^8.0.0",
+    "@promimi/infrastructure": "workspace:*"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.0.0"

@@ -41,11 +41,10 @@ No Admin, cada endpoint está em `src/api/features/<domínio>/<chamada>.ts`, com
 
 Packages não são uma segunda camada para organizar qualquer arquivo. Eles existem somente quando o mesmo código é necessário em dois ou mais processos:
 
-| Package     | Conteúdo permitido                                                                 |
-| ----------- | ---------------------------------------------------------------------------------- |
-| `config`    | schemas e carregadores de configuração de ambiente                                 |
-| `database`  | schema Drizzle, conexão, seed e migrações                                           |
-| `query`     | provider e política de cache React Query para os dois frontends                    |
+| Package         | Conteúdo permitido                                                            |
+| --------------- | ----------------------------------------------------------------------------- |
+| `infrastructure` | conexão PostgreSQL, schema/migrações e carregadores tipados de ambiente       |
+| `query`         | provider e política de cache React Query para os dois frontends               |
 | `design-system` | marca, tokens e componentes visuais genéricos; sem regra de domínio ou página |
 
 Regra prática: se só a API usa uma regra de catálogo, ela fica em `apps/api/src/modules/catalog`; se só o painel usa uma tela, ela fica em `apps/admin/src/features`. Não se cria package apenas para reexportar um arquivo.
@@ -65,6 +64,6 @@ O worker consome filas pg-boss no mesmo PostgreSQL para rotina, expiração e pu
 
 ## Operação
 
-GitHub Actions verifica, gera imagens imutáveis, executa migrações e sobe o Compose. O servidor só aceita HTTPS através do Caddy. Segredos ficam no ambiente do servidor e nos Secrets do GitHub, nunca no repositório.
+GitHub Actions verifica, gera imagens imutáveis, executa migrações e sobe o Compose. O servidor só aceita HTTPS através do Caddy. Segredos estruturais — conexão do banco, chaves de sessão e chave de cifragem — ficam no ambiente do servidor e nos Secrets do GitHub, nunca no repositório. Configurações operacionais de integrações, como SMTP e destinos de publicação, ficam no banco; suas credenciais são cifradas antes de serem persistidas.
 
 Consulte também os ADRs em [`docs/adr`](./adr), o [guia de segurança](./security.md) e o [runbook](./operations.md).

@@ -29,12 +29,12 @@ importers:
 
   apps/admin:
     dependencies:
-      '@promimi/config':
-        specifier: workspace:*
-        version: link:../../packages/config
       '@promimi/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@promimi/infrastructure':
+        specifier: workspace:*
+        version: link:../../packages/infrastructure
       '@promimi/query':
         specifier: workspace:*
         version: link:../../packages/query
@@ -90,12 +90,9 @@ importers:
       '@fastify/swagger-ui':
         specifier: ^5.2.3
         version: 5.2.6
-      '@promimi/config':
+      '@promimi/infrastructure':
         specifier: workspace:*
-        version: link:../../packages/config
-      '@promimi/database':
-        specifier: workspace:*
-        version: link:../../packages/database
+        version: link:../../packages/infrastructure
       argon2:
         specifier: ^0.41.1
         version: 0.41.1
@@ -139,6 +136,9 @@ importers:
       '@capacitor/core':
         specifier: ^8.0.0
         version: 8.5.1
+      '@promimi/infrastructure':
+        specifier: workspace:*
+        version: link:../../packages/infrastructure
     devDependencies:
       '@capacitor/cli':
         specifier: ^8.0.0
@@ -195,6 +195,9 @@ importers:
 
   apps/whatsapp:
     dependencies:
+      '@promimi/infrastructure':
+        specifier: workspace:*
+        version: link:../../packages/infrastructure
       fastify:
         specifier: ^5.3.2
         version: 5.12.3
@@ -220,12 +223,9 @@ importers:
 
   apps/worker:
     dependencies:
-      '@promimi/config':
+      '@promimi/infrastructure':
         specifier: workspace:*
-        version: link:../../packages/config
-      '@promimi/database':
-        specifier: workspace:*
-        version: link:../../packages/database
+        version: link:../../packages/infrastructure
       drizzle-orm:
         specifier: ^0.44.2
         version: 0.44.7(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(pg@8.23.0)
@@ -246,23 +246,23 @@ importers:
         specifier: ^5.8.3
         version: 5.9.3
 
-  packages/config:
+  packages/design-system:
     dependencies:
-      dotenv:
-        specifier: ^16.6.1
-        version: 16.6.1
-      zod:
-        specifier: ^3.24.3
-        version: 3.25.76
+      react:
+        specifier: ^19.0.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.3.0(react@19.3.0)
     devDependencies:
-      tsx:
-        specifier: ^4.19.3
-        version: 4.23.13
+      '@types/react':
+        specifier: ^19.1.2
+        version: 19.3.0
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
 
-  packages/database:
+  packages/infrastructure:
     dependencies:
       dotenv:
         specifier: ^16.6.1
@@ -273,6 +273,9 @@ importers:
       pg:
         specifier: ^8.16.0
         version: 8.23.0
+      zod:
+        specifier: ^3.24.3
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^22.15.3
@@ -286,22 +289,6 @@ importers:
       tsx:
         specifier: ^4.19.3
         version: 4.23.13
-      typescript:
-        specifier: ^5.8.3
-        version: 5.9.3
-
-  packages/design-system:
-    dependencies:
-      react:
-        specifier: ^19.0.0
-        version: 19.3.0
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.3.0(react@19.3.0)
-    devDependencies:
-      '@types/react':
-        specifier: ^19.1.2
-        version: 19.3.0
       typescript:
         specifier: ^5.8.3
         version: 5.9.3

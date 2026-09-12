@@ -1,2 +1,17 @@
 import { index, route, type RouteConfig } from "@react-router/dev/routes";
-export default [index("features/catalog/screens/home.screen.tsx"), route("oferta/:slug", "features/catalog/screens/offer.screen.tsx"), route("buscar", "features/catalog/screens/search.screen.tsx"), route("entrar", "features/auth/screens/login.screen.tsx"), route("verificar-email", "features/auth/screens/verify-email.screen.tsx"), route("recuperar-acesso", "features/auth/screens/recover.screen.tsx"), route("redefinir-senha", "features/auth/screens/reset-password.screen.tsx"), route("conta", "features/account/screens/account.screen.tsx"), route("privacidade", "features/legal/screens/privacy.screen.tsx"), route("termos", "features/legal/screens/terms.screen.tsx"), route("cookies", "features/legal/screens/cookies.screen.tsx"), route("sitemap.xml", "features/catalog/screens/sitemap.screen.ts"), route("robots.txt", "features/system/screens/robots.screen.ts"), route("*", "features/system/screens/not-found.screen.tsx")] satisfies RouteConfig;
+export default [
+  index("features/catalog/screens/home.screen.tsx"),
+  route("oferta/:slug", "features/catalog/screens/offer.screen.tsx"),
+  route("buscar", "features/catalog/screens/search.screen.tsx"),
+  route("entrar", "features/auth/screens/login.screen.tsx"),
+  route("verificar-email", "features/auth/screens/verify-email.screen.tsx"),
+  route("recuperar-acesso", "features/auth/screens/recover.screen.tsx"),
+  route("redefinir-senha", "features/auth/screens/reset-password.screen.tsx"),
+  route("conta", "features/account/screens/account.screen.tsx"),
+  route("privacidade", "features/legal/screens/privacy.screen.tsx"),
+  route("termos", "features/legal/screens/terms.screen.tsx"),
+  route("cookies", "features/legal/screens/cookies.screen.tsx"),
+  route("sitemap.xml", "features/catalog/screens/sitemap.screen.ts"),
+  route("robots.txt", "features/system/screens/robots.screen.ts"),
+  route("*", "features/system/screens/not-found.screen.tsx"),
+] satisfies RouteConfig;

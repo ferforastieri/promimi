@@ -1,6 +1,11 @@
 export type OfferStatus = "DRAFT" | "PUBLISHED" | "EXPIRED" | "PAUSED";
 
-export type Store = { id: string; name: string; slug: string; logoUrl?: string | null };
+export type Store = {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl?: string | null;
+};
 
 /** Public catalog response model. It deliberately excludes administrative and persistence fields. */
 export type Offer = {

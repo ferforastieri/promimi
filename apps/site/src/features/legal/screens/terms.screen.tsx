@@ -1,4 +1,38 @@
 import { Card, PageLayout, PanelHeader } from "@promimi/design-system";
 import { Footer, Header } from "../../shell/components";
 export const meta = () => [{ title: "Termos de uso — Promimi" }];
-export default function Terms() { return <><Header /><PageLayout width="reading"><Card className="p-6 sm:p-8"><PanelHeader eyebrow="Transparência" title="Termos de uso" /><p className="mt-6 text-sm leading-7 text-ink/65">O Promimi publica ofertas encontradas pela equipe e por rotinas autorizadas. Preços, estoque, frete e condições são definidos pela loja e podem mudar após a verificação.</p><h2 className="mt-8 text-lg font-semibold tracking-[-.025em]">Comentários</h2><p className="mt-2 text-sm leading-7 text-ink/65">Contas autenticadas podem comentar e denunciar conteúdo inadequado. Não são permitidos spam, fraude, ofensas, links maliciosos ou dados pessoais de terceiros. A equipe pode ocultar conteúdo que viole estas regras.</p><h2 className="mt-8 text-lg font-semibold tracking-[-.025em]">Compras</h2><p className="mt-2 text-sm leading-7 text-ink/65">A compra ocorre diretamente com a loja. O Promimi não processa pagamento, não garante disponibilidade e não é responsável pelo atendimento pós-venda do varejista.</p></Card></PageLayout><Footer /></>; }
+export default function Terms() {
+  return (
+    <>
+      <Header />
+      <PageLayout width="reading">
+        <Card className="p-6 sm:p-8">
+          <PanelHeader eyebrow="Transparência" title="Termos de uso" />
+          <p className="mt-6 text-sm leading-7 text-ink/65">
+            O Promimi publica ofertas encontradas pela equipe e por rotinas
+            autorizadas. Preços, estoque, frete e condições são definidos pela
+            loja e podem mudar após a verificação.
+          </p>
+          <h2 className="mt-8 text-lg font-semibold tracking-[-.025em]">
+            Comentários
+          </h2>
+          <p className="mt-2 text-sm leading-7 text-ink/65">
+            Contas autenticadas podem comentar e denunciar conteúdo inadequado.
+            Não são permitidos spam, fraude, ofensas, links maliciosos ou dados
+            pessoais de terceiros. A equipe pode ocultar conteúdo que viole
+            estas regras.
+          </p>
+          <h2 className="mt-8 text-lg font-semibold tracking-[-.025em]">
+            Compras
+          </h2>
+          <p className="mt-2 text-sm leading-7 text-ink/65">
+            A compra ocorre diretamente com a loja. O Promimi não processa
+            pagamento, não garante disponibilidade e não é responsável pelo
+            atendimento pós-venda do varejista.
+          </p>
+        </Card>
+      </PageLayout>
+      <Footer />
+    </>
+  );
+}

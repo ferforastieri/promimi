@@ -4,4 +4,80 @@ import { AuthShell, Button, Field, Input } from "@promimi/design-system";
 import { Header } from "../../shell/components";
 import { useResetPassword } from "../hooks";
 
-export default function ResetPassword() { const [params] = useSearchParams(); const [notice, setNotice] = useState(""); const reset = useResetPassword(); const submit = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); const form = new FormData(event.currentTarget); const password = String(form.get("password")); if (password !== String(form.get("confirmation"))) { setNotice("As senhas precisam ser iguais."); return; } try { await reset.mutateAsync({ token: params.get("token"), password }); setNotice("Senha redefinida. Você já pode entrar."); } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível redefinir a senha."); } }; return <><Header /><AuthShell eyebrow="Nova senha" title={<>Volte a<br /><span className="text-[#ff967d]">garimpar.</span></>} description="Escolha uma senha com no mínimo dez caracteres. O link expira após uma hora."><h2 className="text-2xl font-semibold tracking-[-.04em]">Definir nova senha</h2><form className="mt-7 grid gap-4" onSubmit={submit}><Field label="Nova senha"><Input disabled={reset.isPending} required name="password" type="password" minLength={10} /></Field><Field label="Confirme a senha"><Input disabled={reset.isPending} required name="confirmation" type="password" minLength={10} /></Field><Button size="lg" disabled={reset.isPending}>{reset.isPending ? "Salvando…" : "Salvar nova senha"}</Button></form>{notice && <p className="mt-4 rounded-xl bg-pine-soft px-3.5 py-3 text-sm leading-6 text-pine">{notice}</p>}<Link className="mt-6 inline-block text-xs font-semibold text-brand" to="/entrar">Voltar para entrar</Link></AuthShell></>; }
+export default function ResetPassword() {
+  const [params] = useSearchParams();
+  const [notice, setNotice] = useState("");
+  const reset = useResetPassword();
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const password = String(form.get("password"));
+    if (password !== String(form.get("confirmation"))) {
+      setNotice("As senhas precisam ser iguais.");
+      return;
+    }
+    try {
+      await reset.mutateAsync({ token: params.get("token"), password });
+      setNotice("Senha redefinida. Você já pode entrar.");
+    } catch (error) {
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível redefinir a senha.",
+      );
+    }
+  };
+  return (
+    <>
+      <Header />
+      <AuthShell
+        eyebrow="Nova senha"
+        title={
+          <>
+            Volte a<br />
+            <span className="text-[#ff967d]">garimpar.</span>
+          </>
+        }
+        description="Escolha uma senha com no mínimo dez caracteres. O link expira após uma hora."
+      >
+        <h2 className="text-2xl font-semibold tracking-[-.04em]">
+          Definir nova senha
+        </h2>
+        <form className="mt-7 grid gap-4" onSubmit={submit}>
+          <Field label="Nova senha">
+            <Input
+              disabled={reset.isPending}
+              required
+              name="password"
+              type="password"
+              minLength={10}
+            />
+          </Field>
+          <Field label="Confirme a senha">
+            <Input
+              disabled={reset.isPending}
+              required
+              name="confirmation"
+              type="password"
+              minLength={10}
+            />
+          </Field>
+          <Button size="lg" disabled={reset.isPending}>
+            {reset.isPending ? "Salvando…" : "Salvar nova senha"}
+          </Button>
+        </form>
+        {notice && (
+          <p className="mt-4 rounded-xl bg-pine-soft px-3.5 py-3 text-sm leading-6 text-pine">
+            {notice}
+          </p>
+        )}
+        <Link
+          className="mt-6 inline-block text-xs font-semibold text-brand"
+          to="/entrar"
+        >
+          Voltar para entrar
+        </Link>
+      </AuthShell>
+    </>
+  );
+}

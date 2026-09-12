@@ -3,7 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "scripts": { "dev": "tsx watch src/main.ts", "build": "tsc", "start": "tsx src/main.ts", "typecheck": "tsc --noEmit" },
-  "dependencies": { "fastify": "^5.3.2", "qrcode": "^1.5.4", "tsx": "^4.19.3", "whatsapp-web.js": "^1.26.0" },
-  "devDependencies": { "@types/node": "^22.15.3", "@types/qrcode": "^1.5.5", "typescript": "^5.8.3" }
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc",
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@promimi/infrastructure": "workspace:*",
+    "fastify": "^5.3.2",
+    "qrcode": "^1.5.4",
+    "tsx": "^4.19.3",
+    "whatsapp-web.js": "^1.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "@types/qrcode": "^1.5.5",
+    "typescript": "^5.8.3"
+  }
 }

@@ -2,5 +2,5 @@ FROM node:22-alpine AS build
 RUN corepack enable
 WORKDIR /app
 COPY . .
-RUN pnpm install --frozen-lockfile=false && pnpm --filter @promimi/admin build
+RUN pnpm install --frozen-lockfile=false && pnpm --filter @promimi/infrastructure build && pnpm --filter @promimi/admin build
 CMD ["pnpm", "--filter", "@promimi/admin", "exec", "vite", "preview", "--host", "0.0.0.0", "--port", "4173"]

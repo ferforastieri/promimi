@@ -1,3 +1,10 @@
-import "dotenv/config";
 import { defineConfig } from "drizzle-kit";
-export default defineConfig({ schema: "./src/schema.ts", out: "./drizzle", dialect: "postgresql", dbCredentials: { url: process.env.DATABASE_URL! } });
+import { runtimeEnvironment } from "./src/config/runtime.js";
+
+const databaseUrl = runtimeEnvironment.DATABASE_URL ?? "postgresql://promimi:promimi@localhost:5432/promimi";
+export default defineConfig({
+  schema: "./src/database/schema/index.ts",
+  out: "./drizzle",
+  dialect: "postgresql",
+  dbCredentials: { url: databaseUrl },
+});

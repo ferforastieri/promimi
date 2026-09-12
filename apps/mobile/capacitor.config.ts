@@ -1,6 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
+import { loadMobileConfig } from "@promimi/infrastructure/config/mobile";
 
-const siteUrl = process.env.PROMIMI_MOBILE_SITE_URL;
+const { PROMIMI_MOBILE_SITE_URL: siteUrl } = loadMobileConfig();
 
 const config: CapacitorConfig = {
   appId: "com.promimi.app",
@@ -10,14 +11,7 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
     webContentsDebuggingEnabled: false,
   },
-  ...(siteUrl
-    ? {
-        server: {
-          url: siteUrl,
-          cleartext: false,
-        },
-      }
-    : {}),
+  ...(siteUrl ? { server: { url: siteUrl, cleartext: false } } : {}),
 };
 
 export default config;

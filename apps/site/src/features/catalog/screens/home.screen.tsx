@@ -1,12 +1,117 @@
 import { Link } from "react-router";
-import { Button, Card, EmptyState, PageLayout, StatusPill } from "@promimi/design-system";
+import {
+  Button,
+  Card,
+  EmptyState,
+  PageLayout,
+  StatusPill,
+} from "@promimi/design-system";
 import { Footer, Header, OfferCard } from "../../shell/components";
 import { apiOffers } from "../server";
 
-export const meta = () => [{ title: "Promimi — promoções que valem a pena" }, { name: "description", content: "Ofertas verificadas, cupons e preços em reais." }];
-export async function loader() { return { offers: await apiOffers() }; }
+export const meta = () => [
+  { title: "Promimi — promoções que valem a pena" },
+  {
+    name: "description",
+    content: "Ofertas verificadas, cupons e preços em reais.",
+  },
+];
+export async function loader({ request }: { request: Request }) {
+  return { offers: await apiOffers(new URL(request.url).origin) };
+}
 
-export default function Home({ loaderData }: { loaderData: { offers: Awaited<ReturnType<typeof apiOffers>> } }) {
+export default function Home({
+  loaderData,
+}: {
+  loaderData: { offers: Awaited<ReturnType<typeof apiOffers>> };
+}) {
   const offers = loaderData.offers;
-  return <><Header /><PageLayout className="py-6 sm:py-8"><section className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]"><Card className="relative overflow-hidden bg-[#292f3c] p-6 text-white sm:p-8 lg:p-10"><div className="absolute -right-16 -top-16 h-60 w-60 rounded-full bg-brand/35 blur-3xl" /><div className="relative max-w-xl"><StatusPill tone="orange">Ofertas verificadas</StatusPill><h1 className="mt-5 text-[clamp(36px,5vw,58px)] font-semibold leading-[1.02] tracking-[-.065em]">A compra certa<br />começa <span className="text-[#ff967d]">aqui.</span></h1><p className="mt-5 max-w-md text-sm leading-7 text-white/65">Preço, cupom e loja conferidos antes de aparecerem no seu radar.</p><Link to="/buscar" className="mt-7 inline-flex min-h-11 items-center rounded-xl bg-brand px-4 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(238,77,45,.25)] transition hover:bg-brand-dark">Explorar ofertas <span className="ml-2">→</span></Link></div></Card><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1"><Card className="p-5"><StatusPill tone="green">Monitorado</StatusPill><strong className="mt-5 block text-[30px] font-semibold tracking-[-.055em]">{offers.length}</strong><p className="mt-1 text-sm text-ink/55">ofertas publicadas para você comparar.</p></Card><Card className="p-5"><p className="text-sm font-medium text-ink/55">Como funciona</p><div className="mt-4 grid gap-3 text-sm"><span className="flex items-center gap-3"><b className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-xs text-brand">1</b> A gente verifica</span><span className="flex items-center gap-3"><b className="grid h-7 w-7 place-items-center rounded-full bg-info-soft text-xs text-info">2</b> Você decide</span></div></Card></div></section><section className="mt-8"><div className="mb-5 flex flex-wrap items-end justify-between gap-4"><div><p className="text-[11px] font-semibold uppercase tracking-[.12em] text-ink/42">Em destaque</p><h2 className="mt-1 text-2xl font-semibold tracking-[-.04em]">Ofertas para aproveitar agora</h2></div><Link className="text-sm font-semibold text-brand transition hover:text-brand-dark" to="/buscar">Ver catálogo →</Link></div>{offers.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{offers.map((offer) => <OfferCard key={offer.id} offer={offer} />)}</div> : <EmptyState title="Nenhuma oferta disponível" description="Assim que uma oferta for publicada pela equipe, ela aparecerá aqui." />}</section></PageLayout><Footer /></>;
+  return (
+    <>
+      <Header />
+      <PageLayout className="py-6 sm:py-8">
+        <section className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
+          <Card className="relative overflow-hidden bg-[#292f3c] p-6 text-white sm:p-8 lg:p-10">
+            <div className="absolute -right-16 -top-16 h-60 w-60 rounded-full bg-brand/35 blur-3xl" />
+            <div className="relative max-w-xl">
+              <StatusPill tone="orange">Ofertas verificadas</StatusPill>
+              <h1 className="mt-5 text-[clamp(36px,5vw,58px)] font-semibold leading-[1.02] tracking-[-.065em]">
+                A compra certa
+                <br />
+                começa <span className="text-[#ff967d]">aqui.</span>
+              </h1>
+              <p className="mt-5 max-w-md text-sm leading-7 text-white/65">
+                Preço, cupom e loja conferidos antes de aparecerem no seu radar.
+              </p>
+              <Link
+                to="/buscar"
+                className="mt-7 inline-flex min-h-11 items-center rounded-xl bg-brand px-4 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(238,77,45,.25)] transition hover:bg-brand-dark"
+              >
+                Explorar ofertas <span className="ml-2">→</span>
+              </Link>
+            </div>
+          </Card>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <Card className="p-5">
+              <StatusPill tone="green">Monitorado</StatusPill>
+              <strong className="mt-5 block text-[30px] font-semibold tracking-[-.055em]">
+                {offers.length}
+              </strong>
+              <p className="mt-1 text-sm text-ink/55">
+                ofertas publicadas para você comparar.
+              </p>
+            </Card>
+            <Card className="p-5">
+              <p className="text-sm font-medium text-ink/55">Como funciona</p>
+              <div className="mt-4 grid gap-3 text-sm">
+                <span className="flex items-center gap-3">
+                  <b className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-xs text-brand">
+                    1
+                  </b>{" "}
+                  A gente verifica
+                </span>
+                <span className="flex items-center gap-3">
+                  <b className="grid h-7 w-7 place-items-center rounded-full bg-info-soft text-xs text-info">
+                    2
+                  </b>{" "}
+                  Você decide
+                </span>
+              </div>
+            </Card>
+          </div>
+        </section>
+        <section className="mt-8">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[.12em] text-ink/42">
+                Em destaque
+              </p>
+              <h2 className="mt-1 text-2xl font-semibold tracking-[-.04em]">
+                Ofertas para aproveitar agora
+              </h2>
+            </div>
+            <Link
+              className="text-sm font-semibold text-brand transition hover:text-brand-dark"
+              to="/buscar"
+            >
+              Ver catálogo →
+            </Link>
+          </div>
+          {offers.length ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {offers.map((offer) => (
+                <OfferCard key={offer.id} offer={offer} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="Nenhuma oferta disponível"
+              description="Assim que uma oferta for publicada pela equipe, ela aparecerá aqui."
+            />
+          )}
+        </section>
+      </PageLayout>
+      <Footer />
+    </>
+  );
 }

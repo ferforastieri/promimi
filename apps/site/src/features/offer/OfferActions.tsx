@@ -1,11 +1,208 @@
 import { useState } from "react";
-import { Button, Card, Field, LoadingCard, Modal, Select, TextButton, Textarea, useToast } from "@promimi/design-system";
-import { useCreateComment, useFavoriteOffer, useOfferComments, useReportComment } from "./hooks";
+import {
+  Button,
+  Card,
+  Field,
+  LoadingCard,
+  Modal,
+  Select,
+  TextButton,
+  Textarea,
+  useToast,
+} from "@promimi/design-system";
+import {
+  useCreateComment,
+  useFavoriteOffer,
+  useOfferComments,
+  useReportComment,
+} from "./hooks";
 
 export function OfferActions({ offerId }: { offerId: string }) {
-  const comments = useOfferComments(offerId); const favorite = useFavoriteOffer(); const createComment = useCreateComment(offerId); const reportComment = useReportComment(); const { showToast } = useToast(); const [text, setText] = useState(""); const [reporting, setReporting] = useState<string | null>(null); const [reason, setReason] = useState("");
-  const saveFavorite = async () => { try { await favorite.mutateAsync(offerId); showToast({ title: "Oferta salva", description: "Ela foi adicionada aos seus favoritos.", tone: "success" }); } catch { showToast({ title: "Entre para favoritar", description: "Faça login para salvar esta oferta.", tone: "error" }); } };
-  const comment = async (event: React.FormEvent) => { event.preventDefault(); if (!text.trim()) return; try { await createComment.mutateAsync(text); setText(""); showToast({ title: "Comentário publicado", tone: "success" }); } catch { showToast({ title: "Entre para comentar", description: "Faça login para publicar um comentário.", tone: "error" }); } };
-  const report = async (event: React.FormEvent) => { event.preventDefault(); if (!reporting) return; try { await reportComment.mutateAsync({ commentId: reporting, reason }); setReporting(null); setReason(""); showToast({ title: "Denúncia enviada", tone: "success" }); } catch { showToast({ title: "Entre para denunciar", description: "Faça login para enviar uma denúncia.", tone: "error" }); } };
-  return <section className="max-w-[760px] pb-12"><div className="mb-4 flex flex-wrap items-end justify-between gap-4"><div><p className="text-[11px] font-semibold uppercase tracking-[.12em] text-ink/42">Comunidade</p><h2 className="mt-1 text-2xl font-semibold tracking-[-.04em]">Informações sobre esta oferta</h2></div><Button variant="secondary" size="sm" disabled={favorite.isPending} onClick={() => void saveFavorite()}>{favorite.isPending ? "Salvando…" : "♡ Favoritar"}</Button></div><Card className="p-4 sm:p-5"><form className="grid gap-3" onSubmit={comment}><Field label="Compartilhe uma dica"><Textarea disabled={createComment.isPending} value={text} onChange={(event) => setText(event.target.value)} maxLength={1500} placeholder="Preço mudou? Tem uma informação útil sobre frete, cupom ou estoque?" /></Field><Button className="justify-self-end" size="sm" disabled={createComment.isPending || !text.trim()}>{createComment.isPending ? "Publicando…" : "Publicar comentário"}</Button></form></Card><div className="mt-4 grid gap-2">{comments.isLoading ? <><LoadingCard lines={2} /><LoadingCard lines={2} /></> : comments.error ? <p className="py-5 text-sm text-danger">Não foi possível carregar comentários.</p> : comments.data?.length ? comments.data.map((item) => <Card className="p-4" key={item.id}><article className="grid grid-cols-[34px_1fr] gap-3"><div className="grid h-[34px] w-[34px] place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand">{item.author.slice(0, 1).toUpperCase()}</div><div><strong className="text-sm font-semibold">{item.author}</strong><time className="ml-2 text-[11px] text-ink/45">{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(item.createdAt))}</time><p className="my-2 text-sm leading-6 text-ink/65">{item.body}</p><TextButton className="text-xs" disabled={reportComment.isPending} onClick={() => setReporting(item.id)}>Denunciar</TextButton></div></article></Card>) : <Card className="p-8 text-center"><p className="text-sm text-ink/55">Ainda não há comentários. Seja a primeira pessoa a compartilhar uma dica.</p></Card>}</div><Modal open={Boolean(reporting)} onClose={() => setReporting(null)} title="Denunciar comentário" description="Sua denúncia será encaminhada para moderação." footer={<><Button variant="ghost" onClick={() => setReporting(null)} disabled={reportComment.isPending}>Cancelar</Button><Button form="report-comment" type="submit" disabled={reportComment.isPending || !reason}>{reportComment.isPending ? "Enviando…" : "Enviar denúncia"}</Button></>}><form id="report-comment" onSubmit={report}><Field label="Motivo"><Select value={reason} onChange={(event) => setReason(event.target.value)} required><option value="">Escolha um motivo</option><option value="Spam ou propaganda">Spam ou propaganda</option><option value="Ofensa ou assédio">Ofensa ou assédio</option><option value="Informação enganosa">Informação enganosa</option></Select></Field></form></Modal></section>;
+  const comments = useOfferComments(offerId);
+  const favorite = useFavoriteOffer();
+  const createComment = useCreateComment(offerId);
+  const reportComment = useReportComment();
+  const { showToast } = useToast();
+  const [text, setText] = useState("");
+  const [reporting, setReporting] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
+  const saveFavorite = async () => {
+    try {
+      await favorite.mutateAsync(offerId);
+      showToast({
+        title: "Oferta salva",
+        description: "Ela foi adicionada aos seus favoritos.",
+        tone: "success",
+      });
+    } catch {
+      showToast({
+        title: "Entre para favoritar",
+        description: "Faça login para salvar esta oferta.",
+        tone: "error",
+      });
+    }
+  };
+  const comment = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!text.trim()) return;
+    try {
+      await createComment.mutateAsync(text);
+      setText("");
+      showToast({ title: "Comentário publicado", tone: "success" });
+    } catch {
+      showToast({
+        title: "Entre para comentar",
+        description: "Faça login para publicar um comentário.",
+        tone: "error",
+      });
+    }
+  };
+  const report = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!reporting) return;
+    try {
+      await reportComment.mutateAsync({ commentId: reporting, reason });
+      setReporting(null);
+      setReason("");
+      showToast({ title: "Denúncia enviada", tone: "success" });
+    } catch {
+      showToast({
+        title: "Entre para denunciar",
+        description: "Faça login para enviar uma denúncia.",
+        tone: "error",
+      });
+    }
+  };
+  return (
+    <section className="max-w-[760px] pb-12">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[.12em] text-ink/42">
+            Comunidade
+          </p>
+          <h2 className="mt-1 text-2xl font-semibold tracking-[-.04em]">
+            Informações sobre esta oferta
+          </h2>
+        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={favorite.isPending}
+          onClick={() => void saveFavorite()}
+        >
+          {favorite.isPending ? "Salvando…" : "♡ Favoritar"}
+        </Button>
+      </div>
+      <Card className="p-4 sm:p-5">
+        <form className="grid gap-3" onSubmit={comment}>
+          <Field label="Compartilhe uma dica">
+            <Textarea
+              disabled={createComment.isPending}
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              maxLength={1500}
+              placeholder="Preço mudou? Tem uma informação útil sobre frete, cupom ou estoque?"
+            />
+          </Field>
+          <Button
+            className="justify-self-end"
+            size="sm"
+            disabled={createComment.isPending || !text.trim()}
+          >
+            {createComment.isPending ? "Publicando…" : "Publicar comentário"}
+          </Button>
+        </form>
+      </Card>
+      <div className="mt-4 grid gap-2">
+        {comments.isLoading ? (
+          <>
+            <LoadingCard lines={2} />
+            <LoadingCard lines={2} />
+          </>
+        ) : comments.error ? (
+          <p className="py-5 text-sm text-danger">
+            Não foi possível carregar comentários.
+          </p>
+        ) : comments.data?.length ? (
+          comments.data.map((item) => (
+            <Card className="p-4" key={item.id}>
+              <article className="grid grid-cols-[34px_1fr] gap-3">
+                <div className="grid h-[34px] w-[34px] place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand">
+                  {item.author.slice(0, 1).toUpperCase()}
+                </div>
+                <div>
+                  <strong className="text-sm font-semibold">
+                    {item.author}
+                  </strong>
+                  <time className="ml-2 text-[11px] text-ink/45">
+                    {new Intl.DateTimeFormat("pt-BR", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                      timeZone: "America/Sao_Paulo",
+                    }).format(new Date(item.createdAt))}
+                  </time>
+                  <p className="my-2 text-sm leading-6 text-ink/65">
+                    {item.body}
+                  </p>
+                  <TextButton
+                    className="text-xs"
+                    disabled={reportComment.isPending}
+                    onClick={() => setReporting(item.id)}
+                  >
+                    Denunciar
+                  </TextButton>
+                </div>
+              </article>
+            </Card>
+          ))
+        ) : (
+          <Card className="p-8 text-center">
+            <p className="text-sm text-ink/55">
+              Ainda não há comentários. Seja a primeira pessoa a compartilhar
+              uma dica.
+            </p>
+          </Card>
+        )}
+      </div>
+      <Modal
+        open={Boolean(reporting)}
+        onClose={() => setReporting(null)}
+        title="Denunciar comentário"
+        description="Sua denúncia será encaminhada para moderação."
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => setReporting(null)}
+              disabled={reportComment.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              form="report-comment"
+              type="submit"
+              disabled={reportComment.isPending || !reason}
+            >
+              {reportComment.isPending ? "Enviando…" : "Enviar denúncia"}
+            </Button>
+          </>
+        }
+      >
+        <form id="report-comment" onSubmit={report}>
+          <Field label="Motivo">
+            <Select
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              required
+            >
+              <option value="">Escolha um motivo</option>
+              <option value="Spam ou propaganda">Spam ou propaganda</option>
+              <option value="Ofensa ou assédio">Ofensa ou assédio</option>
+              <option value="Informação enganosa">Informação enganosa</option>
+            </Select>
+          </Field>
+        </form>
+      </Modal>
+    </section>
+  );
 }

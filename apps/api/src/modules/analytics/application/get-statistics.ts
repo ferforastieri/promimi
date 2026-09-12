@@ -1,2 +1,21 @@
 import type { AdministrativeStatistics } from "../domain/statistics.js";
-export const toStatistics = (row: { active?: string; raw_clicks?: string; filtered_clicks?: string; comments?: string } | undefined, sources: Array<{ source: string; clicks: string }>): AdministrativeStatistics => ({ activeOffers: Number(row?.active ?? 0), rawClicks24h: Number(row?.raw_clicks ?? 0), clicks24h: Number(row?.filtered_clicks ?? 0), visibleComments: Number(row?.comments ?? 0), clicksBySource: sources.map((source) => ({ source: source.source, clicks: Number(source.clicks) })) });
+export const toStatistics = (
+  row:
+    | {
+        active?: string;
+        raw_clicks?: string;
+        filtered_clicks?: string;
+        comments?: string;
+      }
+    | undefined,
+  sources: Array<{ source: string; clicks: string }>,
+): AdministrativeStatistics => ({
+  activeOffers: Number(row?.active ?? 0),
+  rawClicks24h: Number(row?.raw_clicks ?? 0),
+  clicks24h: Number(row?.filtered_clicks ?? 0),
+  visibleComments: Number(row?.comments ?? 0),
+  clicksBySource: sources.map((source) => ({
+    source: source.source,
+    clicks: Number(source.clicks),
+  })),
+});

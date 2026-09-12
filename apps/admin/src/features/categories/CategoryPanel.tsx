@@ -1,5 +1,13 @@
 import { useState, type FormEvent } from "react";
-import { Button, Card, Field, Input, LoadingCard, PanelHeader, Textarea } from "@promimi/design-system";
+import {
+  Button,
+  Card,
+  Field,
+  Input,
+  LoadingCard,
+  PanelHeader,
+  Textarea,
+} from "@promimi/design-system";
 import {
   useCreateCategory,
   useManagedCategories,
@@ -41,11 +49,35 @@ export function CategoryPanel() {
     }
   };
   const items = categories.data?.data ?? [];
-  if (categories.isLoading) return <Card className="p-5 sm:p-6"><PanelHeader eyebrow="Catálogo" title="Categorias" /><div className="mt-5 grid gap-2"><LoadingCard lines={1} /><LoadingCard lines={1} /><LoadingCard lines={1} /></div></Card>;
+  if (categories.isLoading)
+    return (
+      <Card className="p-5 sm:p-6">
+        <PanelHeader eyebrow="Catálogo" title="Categorias" />
+        <div className="mt-5 grid gap-2">
+          <LoadingCard lines={1} />
+          <LoadingCard lines={1} />
+          <LoadingCard lines={1} />
+        </div>
+      </Card>
+    );
   return (
-    <Card className="p-5 sm:p-6"><PanelHeader eyebrow="Catálogo" title="Categorias" description="Organize como as ofertas aparecem para quem está buscando." /><div className="mt-5 grid gap-2">
+    <Card className="p-5 sm:p-6">
+      <PanelHeader
+        eyebrow="Catálogo"
+        title="Categorias"
+        description="Organize como as ofertas aparecem para quem está buscando."
+      />
+      <div className="mt-5 grid gap-2">
         {items.map((item) => (
-          <article className="flex items-center justify-between gap-4 rounded-xl border border-line p-4" key={item.id}><div className="grid gap-1"><strong className="text-sm">{item.name}</strong><small className="text-xs text-ink/50">{item.description || "Sem descrição"}</small>
+          <article
+            className="flex items-center justify-between gap-4 rounded-xl border border-line p-4"
+            key={item.id}
+          >
+            <div className="grid gap-1">
+              <strong className="text-sm">{item.name}</strong>
+              <small className="text-xs text-ink/50">
+                {item.description || "Sem descrição"}
+              </small>
             </div>
             <Button
               disabled={updateCategory.isPending}
@@ -56,7 +88,8 @@ export function CategoryPanel() {
           </article>
         ))}
       </div>
-      <form className="mt-6 grid max-w-xl gap-4" onSubmit={create}><Field label="Nome">
+      <form className="mt-6 grid max-w-xl gap-4" onSubmit={create}>
+        <Field label="Nome">
           <Input
             name="name"
             required

@@ -7,5 +7,5 @@ export const rateLimits = {
   tokenAction: { max: 10, timeWindow: "1 hour" },
   accountDeletion: { max: 3, timeWindow: "1 hour" },
   comment: { max: 5, timeWindow: "1 minute" },
-  report: { max: 10, timeWindow: "1 hour" }
+  report: { max: 10, timeWindow: "1 hour" },
 } as const;

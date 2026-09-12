@@ -3,5 +3,5 @@ RUN corepack enable && apt-get update && apt-get install -y --no-install-recomme
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 WORKDIR /app
 COPY . .
-RUN pnpm install --frozen-lockfile=false
+RUN pnpm install --frozen-lockfile=false && pnpm --filter @promimi/infrastructure build
 CMD ["pnpm", "--filter", "@promimi/whatsapp", "exec", "tsx", "src/main.ts"]

@@ -1,1 +1,8 @@
-export const parseDestinations = (credentials: Record<string, string>) => [...new Set((credentials.destinations ?? credentials.destination ?? "").split(",").map((value) => value.trim()).filter(Boolean))];
+export const parseDestinations = (credentials: Record<string, string>) => [
+  ...new Set(
+    (credentials.destinations ?? credentials.destination ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  ),
+];

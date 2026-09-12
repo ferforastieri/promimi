@@ -1,4 +1,29 @@
 import { Card, PageLayout, PanelHeader } from "@promimi/design-system";
 import { Footer, Header } from "../../shell/components";
 export const meta = () => [{ title: "Cookies — Promimi" }];
-export default function Cookies() { return <><Header /><PageLayout width="reading"><Card className="p-6 sm:p-8"><PanelHeader eyebrow="Transparência" title="Cookies" /><p className="mt-6 text-sm leading-7 text-ink/65">Usamos armazenamento essencial para manter sua sessão e preferências. Métricas de clique são agregadas para entender quais ofertas ajudam mais pessoas.</p><h2 className="mt-8 text-lg font-semibold tracking-[-.025em]">Gerencie suas escolhas</h2><p className="mt-2 text-sm leading-7 text-ink/65">Você pode limpar o armazenamento do Promimi nas configurações do navegador. Cookies não essenciais devem ser ativados somente após seu consentimento.</p></Card></PageLayout><Footer /></>; }
+export default function Cookies() {
+  return (
+    <>
+      <Header />
+      <PageLayout width="reading">
+        <Card className="p-6 sm:p-8">
+          <PanelHeader eyebrow="Transparência" title="Cookies" />
+          <p className="mt-6 text-sm leading-7 text-ink/65">
+            Usamos armazenamento essencial para manter sua sessão e
+            preferências. Métricas de clique são agregadas para entender quais
+            ofertas ajudam mais pessoas.
+          </p>
+          <h2 className="mt-8 text-lg font-semibold tracking-[-.025em]">
+            Gerencie suas escolhas
+          </h2>
+          <p className="mt-2 text-sm leading-7 text-ink/65">
+            Você pode limpar o armazenamento do Promimi nas configurações do
+            navegador. Cookies não essenciais devem ser ativados somente após
+            seu consentimento.
+          </p>
+        </Card>
+      </PageLayout>
+      <Footer />
+    </>
+  );
+}

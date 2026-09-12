@@ -19,18 +19,41 @@ export function UserPanel() {
     }
   };
   const items = users.data?.data ?? [];
-  if (users.isLoading) return <Card className="p-5 sm:p-6"><PanelHeader eyebrow="Acessos" title="Usuários" /><div className="mt-5 grid gap-2"><LoadingCard lines={1} /><LoadingCard lines={1} /><LoadingCard lines={1} /></div></Card>;
+  if (users.isLoading)
+    return (
+      <Card className="p-5 sm:p-6">
+        <PanelHeader eyebrow="Acessos" title="Usuários" />
+        <div className="mt-5 grid gap-2">
+          <LoadingCard lines={1} />
+          <LoadingCard lines={1} />
+          <LoadingCard lines={1} />
+        </div>
+      </Card>
+    );
   return (
-    <Card className="p-5 sm:p-6"><PanelHeader eyebrow="Acessos" title="Usuários" description="Defina quem pode administrar a operação." /><div className="mt-5 grid gap-2">
+    <Card className="p-5 sm:p-6">
+      <PanelHeader
+        eyebrow="Acessos"
+        title="Usuários"
+        description="Defina quem pode administrar a operação."
+      />
+      <div className="mt-5 grid gap-2">
         {items.map((item) => (
-          <article className="flex items-center justify-between gap-4 rounded-xl border border-line p-4" key={item.id}><div className="grid gap-1"><strong className="text-sm">{item.name || item.email}</strong><small className="text-xs text-ink/50">
+          <article
+            className="flex items-center justify-between gap-4 rounded-xl border border-line p-4"
+            key={item.id}
+          >
+            <div className="grid gap-1">
+              <strong className="text-sm">{item.name || item.email}</strong>
+              <small className="text-xs text-ink/50">
                 {item.email} ·{" "}
                 {item.emailVerifiedAt ? "verificado" : "pendente"}
               </small>
             </div>
             <Select
               aria-label={`Papel de ${item.email}`}
-              className="min-w-[10rem]" value={item.role}
+              className="min-w-[10rem]"
+              value={item.role}
               disabled={updateRole.isPending}
               onChange={(event) =>
                 void change(item.id, event.target.value as UserRole)

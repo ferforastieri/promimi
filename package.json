@@ -13,10 +13,9 @@
     "typecheck": "turbo typecheck",
     "lint": "pnpm typecheck",
     "test": "turbo test",
-    "verify": "pnpm --filter @promimi/database check && pnpm lint && pnpm test && pnpm build",
-    "db:generate": "pnpm --filter @promimi/database generate",
-    "db:migrate": "pnpm --filter @promimi/database migrate",
-    "db:seed": "pnpm --filter @promimi/database seed"
+    "verify": "pnpm --filter @promimi/infrastructure check && pnpm lint && pnpm test && pnpm build",
+    "db:generate": "pnpm --filter @promimi/infrastructure generate",
+    "db:migrate": "pnpm --filter @promimi/infrastructure migrate"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.13",

@@ -9,7 +9,7 @@ import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadConfig } from "@promimi/config";
+import { loadApiConfig } from "@promimi/infrastructure/config/api";
 import { bootstrapAdmin } from "./modules/identity/infrastructure/bootstrap-admin.js";
 import { registerHealthEndpoint } from "./shared/observability/health.js";
 import { installMetrics } from "./shared/observability/metrics.js";
@@ -17,10 +17,21 @@ import { installCsrfOriginGuard } from "./shared/http/csrf.js";
 import { installErrorHandler } from "./shared/http/errors.js";
 import { rateLimits } from "./shared/http/rate-limit.js";
 
-const config = loadConfig();
-const modulesDirectory = join(dirname(fileURLToPath(import.meta.url)), "modules");
+const config = loadApiConfig();
+const modulesDirectory = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "modules",
+);
 const app = Fastify({ logger: true, trustProxy: true, bodyLimit: 1_048_576 });
-const allowedOrigins = new Set([config.APP_URL, process.env.ADMIN_URL, "http://localhost:3000", "http://localhost:5173"].filter((origin): origin is string => Boolean(origin)));
+app.decorate("promimiConfig", config);
+const allowedOrigins = new Set(
+  [
+    config.APP_URL,
+    config.ADMIN_URL,
+    "http://localhost:3000",
+    "http://localhost:5173",
+  ].filter((origin): origin is string => Boolean(origin)),
+);
 await app.register(helmet, {
   global: true,
   contentSecurityPolicy: {
@@ -32,17 +43,29 @@ await app.register(helmet, {
       objectSrc: ["'none'"],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      connectSrc: ["'self'"]
-    }
+      connectSrc: ["'self'"],
+    },
   },
-  referrerPolicy: { policy: "strict-origin-when-cross-origin" }
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
 });
 await app.register(cookie);
-await app.register(cors, { credentials: true, origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)) });
-await app.register(jwt, { secret: config.JWT_SECRET, cookie: { cookieName: "promimi_session", signed: false } });
+await app.register(cors, {
+  credentials: true,
+  origin: (origin, callback) =>
+    callback(null, !origin || allowedOrigins.has(origin)),
+});
+await app.register(jwt, {
+  secret: config.JWT_SECRET,
+  cookie: { cookieName: "promimi_session", signed: false },
+});
 await app.register(rateLimit, rateLimits.default);
 installCsrfOriginGuard(app, allowedOrigins);
-await app.register(swagger, { openapi: { info: { title: "Promimi API", version: "v1" }, servers: [{ url: "/api/v1" }] } });
+await app.register(swagger, {
+  openapi: {
+    info: { title: "Promimi API", version: "v1" },
+    servers: [{ url: "/api/v1" }],
+  },
+});
 await app.register(swaggerUi, { routePrefix: "/docs" });
 installMetrics(app);
 installErrorHandler(app);
@@ -50,8 +73,9 @@ registerHealthEndpoint(app);
 await app.register(autoload, {
   dir: modulesDirectory,
   dirNameRoutePrefix: false,
-  matchFilter: (path) => /[\\/]http[\\/](?:plugin|index)\.(?:[cm]?js|ts)$/.test(path),
-  options: { prefix: "/api/v1" }
+  matchFilter: (path) =>
+    /[\\/]http[\\/](?:plugin|index)\.(?:[cm]?js|ts)$/.test(path),
+  options: { prefix: "/api/v1" },
 });
-await bootstrapAdmin();
+await bootstrapAdmin(config);
 await app.listen({ port: config.PORT, host: "0.0.0.0" });

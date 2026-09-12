@@ -10,7 +10,7 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
-    "@promimi/config": "workspace:*",
+    "@promimi/infrastructure": "workspace:*",
     "@promimi/query": "workspace:*",
     "@promimi/design-system": "workspace:*",
     "@tanstack/react-query": "^5.102.8",

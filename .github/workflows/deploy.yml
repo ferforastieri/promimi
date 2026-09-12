@@ -49,14 +49,14 @@ jobs:
               - 'pnpm-workspace.yaml'
               - 'tsconfig.base.json'
               - 'turbo.json'
-              - 'packages/config/**'
+              - 'packages/infrastructure/**'
             api:
               - 'apps/api/**'
-              - 'packages/database/**'
+              - 'packages/infrastructure/**'
               - 'infra/Dockerfile.api'
             worker:
               - 'apps/worker/**'
-              - 'packages/database/**'
+              - 'packages/infrastructure/**'
               - 'infra/Dockerfile.worker'
             site:
               - 'apps/site/**'
@@ -65,6 +65,7 @@ jobs:
               - 'infra/Dockerfile.site'
             admin:
               - 'apps/admin/**'
+              - 'packages/infrastructure/**'
               - 'packages/design-system/**'
               - 'packages/query/**'
               - 'infra/Dockerfile.admin'
@@ -81,6 +82,7 @@ jobs:
             mobile:
               - 'apps/mobile/**'
               - 'apps/site/**'
+              - 'packages/infrastructure/**'
               - 'packages/design-system/**'
               - 'packages/query/**'
               - 'package.json'
@@ -162,7 +164,7 @@ jobs:
 
       - name: Check database schema
         if: needs.changes.outputs.migrations == 'true'
-        run: pnpm --filter @promimi/database check
+        run: pnpm --filter @promimi/infrastructure check
 
   build-images:
     needs: [changes, verify]
