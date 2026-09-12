@@ -50,7 +50,7 @@ export function OfferForm({
             <p className="mb-1 font-mono text-[10px] tracking-[.14em] text-ink/45">NOVA OFERTA</p>
             <h2 className="text-xl font-bold tracking-tight">Cadastrar manualmente</h2>
           </div>
-          <button className="grid h-9 w-9 place-items-center rounded-lg text-xl hover:bg-ink/5" type="button" onClick={onCancel}>
+          <button className="grid h-9 w-9 place-items-center rounded-lg text-xl hover:bg-ink/5 disabled:opacity-40" disabled={create.isPending} type="button" onClick={onCancel}>
             ×
           </button>
         </div>
@@ -128,7 +128,7 @@ export function OfferForm({
         </label>
         {error && <p className="mt-4 rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
         <div className="mt-6 flex justify-end gap-2">
-          <button className="rounded-xl px-4 py-2 text-sm font-bold text-ink/60 hover:bg-ink/5" type="button" onClick={onCancel}>
+          <button className="rounded-xl px-4 py-2 text-sm font-bold text-ink/60 hover:bg-ink/5 disabled:opacity-40" disabled={create.isPending} type="button" onClick={onCancel}>
             Cancelar
           </button>
           <Button disabled={create.isPending}>

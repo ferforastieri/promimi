@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import { PromimiQueryProvider } from "@promimi/query";
+import { AppFrame, ToastProvider } from "@promimi/design-system";
 import "./tailwind.css";
 
 export const links = () => [
@@ -41,7 +42,9 @@ export default function App() {
   useEffect(() => { if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js"); }, []);
   return (
     <PromimiQueryProvider>
-      <Outlet />
+      <ToastProvider>
+        <AppFrame><Outlet /></AppFrame>
+      </ToastProvider>
     </PromimiQueryProvider>
   );
 }

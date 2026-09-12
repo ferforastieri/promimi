@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from "react";
-import { BrandMark, Button } from "@promimi/design-system";
+import { BrandMark, Button, useToast } from "@promimi/design-system";
 import { useLogin, useLogout } from "./hooks";
 
 export function LoginScreen() {
   const [error, setError] = useState("");
+  const { showToast } = useToast();
   const login = useLogin();
   const logout = useLogout();
 
@@ -21,9 +22,9 @@ export function LoginScreen() {
         throw new Error("Esta conta não tem acesso ao painel.");
       }
     } catch (reason) {
-      setError(
-        reason instanceof Error ? reason.message : "Não foi possível entrar.",
-      );
+      const message = reason instanceof Error ? reason.message : "Não foi possível entrar.";
+      setError(message);
+      showToast({ title: "Não foi possível entrar", description: message, tone: "error" });
     }
   };
 

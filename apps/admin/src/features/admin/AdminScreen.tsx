@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BrandMark, Button } from "@promimi/design-system";
+import { AppFrame, BrandMark, Button, NotFoundPage, PageLayout } from "@promimi/design-system";
 import { Dashboard } from "../dashboard/Dashboard";
 import { LoginScreen } from "../auth/LoginScreen";
 import { useCurrentSession, useLogout } from "../auth/hooks";
@@ -48,6 +48,7 @@ export function AdminScreen() {
   const isStaff =
     session.data?.data.role === "ADMIN" || session.data?.data.role === "EDITOR";
 
+  if (window.location.pathname !== "/") return <NotFoundPage homeHref="/" homeLabel="Abrir painel" title="Área não encontrada" description="Esta área do painel não existe." />;
   if (session.isLoading)
     return (
       <main className="grid min-h-screen place-items-center bg-mist text-sm text-ink/60">
@@ -67,13 +68,7 @@ export function AdminScreen() {
     setTab("Visão geral");
   };
   const data = offers.data?.data ?? [];
-  const stats = statistics.data?.data ?? {
-    activeOffers: 0,
-    rawClicks24h: 0,
-    clicks24h: 0,
-    visibleComments: 0,
-    clicksBySource: [],
-  };
+  const stats = statistics.data?.data;
   const management =
     tab === "Integrações" ? (
       <IntegrationPanel />
@@ -92,7 +87,7 @@ export function AdminScreen() {
     );
 
   return (
-    <div className="min-h-screen bg-mist lg:grid lg:grid-cols-[15rem_1fr]">
+    <AppFrame className="lg:grid lg:grid-cols-[15rem_1fr]">
       <aside className="flex border-b border-white/10 bg-[#22292e] px-4 py-4 text-slate-100 lg:min-h-screen lg:flex-col lg:border-b-0 lg:px-4 lg:py-8">
         <a className="px-2 text-2xl tracking-[-.12em] text-white" href="#inicio">
           <BrandMark className="h-7 w-7" label="" /><span className="font-normal">pro</span><b>mimi</b><i className="not-italic text-brand">•</i><small className="ml-3 font-mono text-[9px] tracking-[.16em] text-slate-400">PAINEL</small>
@@ -110,22 +105,21 @@ export function AdminScreen() {
           ))}
         </nav>
         <div className="hidden items-center gap-2 border-t border-white/10 px-2 pt-4 lg:mt-auto lg:flex">
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-orange-200 text-[10px] font-bold text-ink">PM</span>
-          <div className="grid text-xs"><strong>Equipe Promimi</strong><small className="text-[10px] text-slate-400">Sessão protegida</small>
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-orange-200 text-[10px] font-bold text-ink">{session.data?.data.email.slice(0, 1).toUpperCase()}</span>
+          <div className="grid text-xs"><strong>{session.data?.data.name ?? session.data?.data.email}</strong><small className="text-[10px] text-slate-400">Sessão protegida</small>
           </div>
           <button className="ml-auto text-xs text-slate-400 hover:text-white disabled:opacity-50" disabled={logout.isPending} onClick={() => void logoutNow()}>
             Sair
           </button>
         </div>
       </aside>
-      <section className="w-full px-4 py-5 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+      <PageLayout as="section" width="fluid" className="px-4 py-5 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <header className="mb-8 flex items-start justify-between gap-4">
           <div>
-            <p className="mb-1 font-mono text-[10px] tracking-[.14em] text-ink/45">OPERAÇÃO EM HORÁRIO DE BRASÍLIA</p>
             <h1 className="text-3xl font-bold tracking-tight">{tab}</h1>
           </div>
           <div className="flex items-center gap-2">
-            <button className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-white text-ink/60 transition hover:border-brand/40" onClick={() => void refresh()}>
+            <button className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-white text-ink/60 transition hover:border-brand/40 disabled:cursor-wait disabled:opacity-50" disabled={offers.isFetching || statistics.isFetching || formOptions.isFetching} onClick={() => void refresh()}>
               ↻
             </button>
             <Button onClick={() => setModal(true)}>+ Nova oferta</Button>
@@ -140,16 +134,16 @@ export function AdminScreen() {
                 : "Falha ao atualizar o painel."}
           </div>
         )}
-        {tab === "Visão geral" || tab === "Ofertas" ? (
+        {(offers.isLoading || statistics.isLoading) && (tab === "Visão geral" || tab === "Ofertas") ? <p className="text-sm text-ink/60">Carregando dados…</p> : tab === "Visão geral" || tab === "Ofertas" ? (
           <Dashboard
             offers={data}
-            statistics={stats}
+            statistics={stats!}
             onNewOffer={() => setModal(true)}
           />
         ) : (
           management
         )}
-      </section>
+      </PageLayout>
       {modal && (
         <OfferForm
           stores={formOptions.data?.stores ?? []}
@@ -158,6 +152,6 @@ export function AdminScreen() {
           onSaved={() => setModal(false)}
         />
       )}
-    </div>
+    </AppFrame>
   );
 }
