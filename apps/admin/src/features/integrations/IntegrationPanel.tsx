@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Button } from "@promimi/design-system";
+import { Button, Card, Checkbox, Field, LoadingCard, PanelHeader, Select, Textarea } from "@promimi/design-system";
 import {
   useIntegrations,
   useUpdateIntegration,
@@ -63,11 +63,9 @@ export function IntegrationPanel() {
     }
   };
   const items = integrations.data?.data ?? [];
+  if (integrations.isLoading) return <Card className="p-5 sm:p-6"><PanelHeader eyebrow="Conexões" title="Integrações e destinos" /><div className="mt-5 grid gap-3"><LoadingCard /><LoadingCard /></div></Card>;
   return (
-    <section className="rounded-2xl border border-line bg-white p-6"><p className="mb-1 font-mono text-[10px] tracking-[.14em] text-ink/45">CONEXÕES</p><h2 className="text-xl font-bold tracking-tight">Integrações e destinos</h2><p className="mt-2 text-sm leading-6 text-ink/55">
-        Ative apenas após validar a conta e o destino. Cada falha pausa somente
-        esta integração.
-      </p>
+    <Card className="p-5 sm:p-6"><PanelHeader eyebrow="Conexões" title="Integrações e destinos" description="Ative apenas após validar a conta e o destino. Cada falha pausa somente esta integração." />
       <div className="mt-5 flex flex-wrap gap-2">
         {providers.map((item) => (
           <span
@@ -82,36 +80,24 @@ export function IntegrationPanel() {
           </span>
         ))}
       </div>
-      <form className="mt-6 grid max-w-2xl gap-4" onSubmit={save}><label className="grid gap-1.5 text-sm font-bold text-ink/70">
-          Provedor
-          <select
-            className="rounded-xl border border-line bg-white px-3 py-2.5 font-normal outline-none focus:border-brand" name="provider"
+      <form className="mt-6 grid max-w-2xl gap-4" onSubmit={save}><Field label="Provedor"><Select name="provider"
             value={provider}
             onChange={(event) => setProvider(event.target.value)}
           >
             {providers.map((item) => (
               <option key={item}>{item}</option>
             ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-2 text-sm font-bold text-ink/70">
-          <input name="enabled" type="checkbox" /> Ativar após salvar
-        </label>
-        <label className="grid gap-1.5 text-sm font-bold text-ink/70">
-          Configurações JSON
-          <textarea className="min-h-24 rounded-xl border border-line px-3 py-2.5 font-mono text-xs font-normal outline-none focus:border-brand" name="settings" placeholder='{"feedUrl":"https://..."}' />
-        </label>
-        <label className="grid gap-1.5 text-sm font-bold text-ink/70">
-          Credenciais JSON
-          <textarea
-            className="min-h-24 rounded-xl border border-line px-3 py-2.5 font-mono text-xs font-normal outline-none focus:border-brand" name="credentials"
+          </Select></Field>
+        <Checkbox name="enabled" label="Ativar após salvar" />
+        <Field label="Configurações JSON"><Textarea className="font-mono text-xs" name="settings" placeholder='{"feedUrl":"https://..."}' /></Field>
+        <Field label="Credenciais JSON"><Textarea
+            className="font-mono text-xs" name="credentials"
             placeholder={
               provider === "whatsapp"
                 ? '{"bridgeUrl":"http://whatsapp:3100","bridgeToken":"...","destinations":"120...@g.us"}'
                 : '{"botToken":"...","chatId":"..."}'
             }
-          />
-        </label>
+          /></Field>
         {provider === "whatsapp" && (
           <div className="grid gap-2 rounded-xl border-l-4 border-brand bg-brand/5 p-4"><strong className="text-sm">Validação do WhatsApp</strong><small className="text-xs leading-5 text-ink/55">
               Salve desligado, valide todos os grupos/canais e só então marque a
@@ -136,6 +122,6 @@ export function IntegrationPanel() {
               : "Não foi possível carregar integrações.")}
         </p>
       )}
-    </section>
+    </Card>
   );
 }

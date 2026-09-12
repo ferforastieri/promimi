@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@promimi/design-system";
+import { Button, Card, EmptyState, LoadingCard, PanelHeader } from "@promimi/design-system";
 import { useComments, useUpdateComment } from "./hooks";
 export function CommentPanel() {
   const comments = useComments();
@@ -17,9 +17,10 @@ export function CommentPanel() {
     }
   };
   const items = comments.data?.data ?? [];
+  if (comments.isLoading) return <Card className="p-5 sm:p-6"><PanelHeader eyebrow="Moderação" title="Comentários" /><div className="mt-5 grid gap-2"><LoadingCard lines={2} /><LoadingCard lines={2} /><LoadingCard lines={2} /></div></Card>;
   return (
-    <section className="rounded-2xl border border-line bg-white p-6">
-      <p className="mb-1 font-mono text-[10px] tracking-[.14em] text-ink/45">MODERAÇÃO</p><h2 className="text-xl font-bold tracking-tight">Comentários</h2>
+    <Card className="p-5 sm:p-6">
+      <PanelHeader eyebrow="Moderação" title="Comentários" description="Revise conversas e mantenha a comunidade útil." />
       {(message || comments.error) && (
         <p className="mt-4 rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger">
           {message ||
@@ -41,9 +42,9 @@ export function CommentPanel() {
             </article>
           ))
         ) : (
-          <p>Nenhum comentário para moderar.</p>
+          <EmptyState title="Nenhum comentário para moderar" description="Quando alguém comentar uma oferta, ela aparecerá nesta lista." />
         )}
       </div>
-    </section>
+    </Card>
   );
 }

@@ -6,7 +6,8 @@ type Toast = ToastInput & { id: number };
 type ToastContextValue = { showToast: (input: ToastInput) => void; dismissToast: (id: number) => void };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
-const tones: Record<ToastTone, string> = { success: "border-pine/25 bg-pine-soft text-pine", error: "border-danger/25 bg-danger-soft text-danger", info: "border-line bg-white text-ink" };
+const tones: Record<ToastTone, string> = { success: "border-pine/20 bg-white text-ink", error: "border-danger/20 bg-white text-ink", info: "border-line bg-white text-ink" };
+const toneIcons: Record<ToastTone, string> = { success: "✓", error: "!", info: "i" };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -18,7 +19,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     if (duration > 0) window.setTimeout(() => dismissToast(id), duration);
   }, [dismissToast]);
   const value = useMemo(() => ({ showToast, dismissToast }), [dismissToast, showToast]);
-  return <ToastContext.Provider value={value}>{children}<div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex flex-col items-center gap-2 px-4" aria-live="polite" aria-atomic="true">{toasts.map((toast) => <div className={`pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl border px-4 py-3 shadow-lg ${tones[toast.tone ?? "info"]}`} key={toast.id} role={toast.tone === "error" ? "alert" : "status"}><div className="min-w-0 flex-1"><strong className="block text-sm">{toast.title}</strong>{toast.description && <p className="mt-0.5 text-xs leading-5 opacity-80">{toast.description}</p>}</div><button className="-mr-1 -mt-1 grid h-7 w-7 place-items-center rounded-md text-lg leading-none opacity-70 transition hover:bg-black/5 hover:opacity-100" aria-label="Fechar aviso" onClick={() => dismissToast(toast.id)}>×</button></div>)}</div></ToastContext.Provider>;
+  return <ToastContext.Provider value={value}>{children}<div className="pointer-events-none fixed inset-x-0 top-5 z-50 flex flex-col items-center gap-2 px-4" aria-live="polite" aria-atomic="true">{toasts.map((toast) => { const tone = toast.tone ?? "info"; return <div className={`pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-2xl border px-3.5 py-3 shadow-[0_16px_42px_rgba(28,35,52,.15)] ${tones[tone]}`} key={toast.id} role={tone === "error" ? "alert" : "status"}><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold ${tone === "success" ? "bg-pine-soft text-pine" : tone === "error" ? "bg-danger-soft text-danger" : "bg-info-soft text-info"}`}>{toneIcons[tone]}</span><div className="min-w-0 flex-1 pt-0.5"><strong className="block text-sm font-semibold">{toast.title}</strong>{toast.description && <p className="mt-0.5 text-xs leading-5 text-ink/58">{toast.description}</p>}</div><button className="-mr-1 -mt-1 grid h-7 w-7 place-items-center rounded-lg text-lg leading-none text-ink/45 transition hover:bg-surface-subtle hover:text-ink" aria-label="Fechar aviso" onClick={() => dismissToast(toast.id)}>×</button></div>; })}</div></ToastContext.Provider>;
 }
 
 export function useToast() {

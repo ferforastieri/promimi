@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Button } from "@promimi/design-system";
+import { Button, Card, Checkbox, Field, Input, LoadingCard, PanelHeader, TextButton } from "@promimi/design-system";
 import {
   useAutomationControl,
   useCreateRoutine,
@@ -18,6 +18,7 @@ export function RoutinePanel() {
   const [notice, setNotice] = useState("");
   const paused = control.data?.data.paused ?? false;
   const items = routines.data?.data ?? [];
+  if (routines.isLoading || control.isLoading) return <Card className="p-5 sm:p-6"><PanelHeader eyebrow="Automação" title="Rotinas de publicação" /><div className="mt-5 grid gap-3"><LoadingCard lines={2} /><LoadingCard lines={2} /><LoadingCard className="h-72" /></div></Card>;
   const create = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -104,7 +105,7 @@ export function RoutinePanel() {
     }
   };
   return (
-    <section className="rounded-2xl border border-line bg-white p-6"><p className="mb-1 font-mono text-[10px] tracking-[.14em] text-ink/45">AUTOMAÇÃO</p><h2 className="text-xl font-bold tracking-tight">Rotinas de publicação</h2><div className="mt-5 flex flex-col justify-between gap-4 rounded-xl border border-brand/20 bg-brand/5 p-4 sm:flex-row sm:items-center"><div className="grid gap-1"><strong className="text-sm">
+    <Card className="p-5 sm:p-6"><PanelHeader eyebrow="Automação" title="Rotinas de publicação" description="Defina o que a operação procura e quando cada rotina pode publicar." /><div className="mt-5 flex flex-col justify-between gap-4 rounded-xl border border-brand/20 bg-brand-soft p-4 sm:flex-row sm:items-center"><div className="grid gap-1"><strong className="text-sm">
             {paused ? "Automação geral pausada" : "Automação geral ativa"}
           </strong>
           <small className="text-xs text-ink/55">
@@ -128,85 +129,50 @@ export function RoutinePanel() {
               </small>
             </div>
             <span className="flex gap-3">
-              <button
-                className="text-xs font-bold text-brand hover:underline disabled:opacity-40" disabled={runRoutine.isPending}
+              <TextButton
+                className="text-xs" disabled={runRoutine.isPending}
                 onClick={() => void run(item.id)}
               >
                 Executar
-              </button>
-              <button
-                className="text-xs font-bold text-brand hover:underline disabled:opacity-40" disabled={updateRoutine.isPending}
+              </TextButton>
+              <TextButton
+                className="text-xs" disabled={updateRoutine.isPending}
                 onClick={() => void toggleRoutine(item.id, !item.enabled)}
               >
                 {item.enabled ? "Pausar" : "Retomar"}
-              </button>
+              </TextButton>
             </span>
           </article>
         ))}
       </div>
-      <form className="mt-6 grid max-w-3xl gap-4" onSubmit={create}><label className="grid gap-1.5 text-sm font-bold text-ink/70">
-          Nome
-          <input
-            className="rounded-xl border border-line px-3 py-2.5 font-normal outline-none focus:border-brand" name="name"
+      <form className="mt-6 grid max-w-3xl gap-4" onSubmit={create}><Field label="Nome"><Input
+            name="name"
             required
             minLength={3}
             placeholder="Tecnologia até R$ 2.000"
-          />
-        </label>
-        <label className="grid gap-1.5 text-sm font-bold text-ink/70">
-          Cron (Brasília)
-          <input
-            className="rounded-xl border border-line px-3 py-2.5 font-normal outline-none focus:border-brand" name="scheduleCron"
+          /></Field>
+        <Field label="Cron (Brasília)" hint="Ex.: 0 * * * * executa a cada hora."><Input
+            name="scheduleCron"
             required
             defaultValue="0 * * * *"
             pattern="\S+(\s+\S+){4}"
-          />
-          <small className="text-xs font-normal text-ink/50">Ex.: `0 * * * *` executa a cada hora.</small>
-        </label>
-        <label className="grid gap-1.5 text-sm font-bold text-ink/70">
-          Palavras-chave
-          <input className="rounded-xl border border-line px-3 py-2.5 font-normal outline-none focus:border-brand" name="keywords" placeholder="fone, notebook, teclado" />
-        </label>
-        <label className="grid gap-1.5 text-sm font-bold text-ink/70">
-          Categorias da fonte
-          <input className="rounded-xl border border-line px-3 py-2.5 font-normal outline-none focus:border-brand" name="categories" placeholder="Tecnologia, Games" />
-        </label>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><label className="grid gap-1.5 text-sm font-bold text-ink/70">
-            Preço mínimo
-            <input className="rounded-xl border border-line px-3 py-2.5 font-normal outline-none focus:border-brand" name="minPrice" type="number" min="1" />
-          </label>
-          <label className="grid gap-1.5 text-sm font-bold text-ink/70">
-            Preço máximo
-            <input className="rounded-xl border border-line px-3 py-2.5 font-normal outline-none focus:border-brand" name="maxPrice" type="number" min="1" />
-          </label>
-          <label className="grid gap-1.5 text-sm font-bold text-ink/70">
-            Desconto mínimo (%)
-            <input className="rounded-xl border border-line px-3 py-2.5 font-normal outline-none focus:border-brand" name="minDiscount" type="number" min="1" max="99" />
-          </label>
-          <label className="grid gap-1.5 text-sm font-bold text-ink/70">
-            Limite diário
-            <input
-              className="rounded-xl border border-line px-3 py-2.5 font-normal outline-none focus:border-brand" name="dailyLimit"
-              type="number"
-              min="1"
-              max="100"
-              defaultValue="100"
-            />
-          </label>
+          /></Field>
+        <Field label="Palavras-chave"><Input name="keywords" placeholder="fone, notebook, teclado" /></Field>
+        <Field label="Categorias da fonte"><Input name="categories" placeholder="Tecnologia, Games" /></Field>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Field label="Preço mínimo"><Input name="minPrice" type="number" min="1" /></Field>
+          <Field label="Preço máximo"><Input name="maxPrice" type="number" min="1" /></Field>
+          <Field label="Desconto mínimo (%)"><Input name="minDiscount" type="number" min="1" max="99" /></Field>
+          <Field label="Limite diário"><Input name="dailyLimit" type="number" min="1" max="100" defaultValue="100" /></Field>
         </div>
         <fieldset className="flex flex-wrap gap-4 rounded-xl border border-line p-4">
           <legend>Destinos</legend>
           {["telegram", "whatsapp", "instagram", "facebook"].map(
             (destination) => (
-              <label className="flex items-center gap-1.5 text-sm" key={destination}>
-                <input name={destination} type="checkbox" /> {destination}
-              </label>
+              <Checkbox key={destination} name={destination} label={destination} />
             ),
           )}
         </fieldset>
-        <label className="flex items-center gap-2 text-sm font-bold text-ink/70">
-          <input name="enabled" type="checkbox" defaultChecked /> Ativar rotina
-        </label>
+        <Checkbox name="enabled" defaultChecked label="Ativar rotina" />
         <Button disabled={createRoutine.isPending}>Criar rotina</Button>
       </form>
       {(notice || routines.error || control.error) && (
@@ -219,6 +185,6 @@ export function RoutinePanel() {
                 : "Não foi possível carregar automações.")}
         </p>
       )}
-    </section>
+    </Card>
   );
 }

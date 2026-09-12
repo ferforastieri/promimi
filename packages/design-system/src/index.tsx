@@ -1,4 +1,13 @@
 export { Button } from "./components/Button.js";
+export type { ButtonSize, ButtonVariant } from "./components/Button.js";
+export { Checkbox, Field, Input, Select, Textarea } from "./components/FormControls.js";
+export { Card, EmptyState, MetricCard, PanelHeader } from "./components/Surface.js";
+export { Modal, Sheet } from "./components/Overlay.js";
+export { IconButton } from "./components/IconButton.js";
+export { AuthShell } from "./components/AuthShell.js";
+export { Alert, LoadingCard, Skeleton, SkeletonLines, TableSkeleton } from "./components/Feedback.js";
+export { Avatar, TextButton } from "./components/Avatar.js";
+export { NavigationItem } from "./components/Navigation.js";
 export { StatusPill } from "./components/StatusPill.js";
 export { AppFrame, PageLayout } from "./components/PageLayout.js";
 export { NotFoundPage } from "./components/NotFoundPage.js";

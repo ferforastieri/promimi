@@ -1,9 +1,11 @@
+import { Card, LoadingCard, MetricCard, PanelHeader } from "@promimi/design-system";
 import { useStatistics } from "./hooks";
 export function StatisticsPanel() {
   const statistics = useStatistics();
   const stats = statistics.data?.data;
+  if (statistics.isLoading) return <Card className="p-5 sm:p-6"><PanelHeader eyebrow="Métricas" title="Estatísticas de clique" /><div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><LoadingCard /><LoadingCard /><LoadingCard /><LoadingCard /></div></Card>;
   return (
-    <section className="rounded-2xl border border-line bg-white p-6"><p className="mb-1 font-mono text-[10px] tracking-[.14em] text-ink/45">MÉTRICAS</p><h2 className="text-xl font-bold tracking-tight">Estatísticas de clique</h2>
+    <Card className="p-5 sm:p-6"><PanelHeader eyebrow="Métricas" title="Estatísticas de clique" description="Leituras protegidas e filtradas da atividade do catálogo." />
       {statistics.error && (
         <p className="mt-4 rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger">
           {statistics.error instanceof Error
@@ -14,8 +16,8 @@ export function StatisticsPanel() {
       {stats && (
         <>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[
-            [stats.activeOffers, "ofertas ativas"], [stats.rawClicks24h, "cliques brutos / 24h"], [stats.clicks24h, "cliques filtrados / 24h"], [stats.visibleComments, "comentários visíveis"]
-          ].map(([value, label]) => <strong key={String(label)} className="grid gap-1 rounded-xl bg-mist p-4 text-2xl tracking-tight">{value}<small className="text-[10px] font-semibold text-ink/50">{label}</small></strong>)}</div>{/*
+            [stats.activeOffers, "Ofertas ativas"], [stats.rawClicks24h, "Cliques brutos / 24h"], [stats.clicks24h, "Cliques filtrados / 24h"], [stats.visibleComments, "Comentários visíveis"]
+          ].map(([value, label], index) => <MetricCard key={String(label)} value={value} label={String(label)} tone={index === 0 ? "brand" : index === 2 ? "info" : "neutral"} />)}</div>{/*
             <strong>
               {stats.activeOffers}
               <small>ofertas ativas</small>
@@ -42,6 +44,6 @@ export function StatisticsPanel() {
           </div>
         </>
       )}
-    </section>
+    </Card>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@promimi/design-system";
+import { Button, Card, EmptyState, LoadingCard, PanelHeader } from "@promimi/design-system";
 import { usePublications, useUpdatePublication } from "./hooks";
 const brl = (number: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -26,11 +26,9 @@ export function PublicationPanel() {
     }
   };
   const items = publications.data?.data ?? [];
+  if (publications.isLoading) return <Card className="p-5 sm:p-6"><PanelHeader eyebrow="Distribuição" title="Publicações" /><div className="mt-5 grid gap-3"><LoadingCard lines={2} /><LoadingCard lines={2} /></div></Card>;
   return (
-    <section className="rounded-2xl border border-line bg-white p-6"><p className="mb-1 font-mono text-[10px] tracking-[.14em] text-ink/45">DISTRIBUIÇÃO</p><h2 className="text-xl font-bold tracking-tight">Publicações</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-ink/55">
-        Uma falha não bloqueia os outros destinos. Reenviar usa a fila
-        idempotente do worker.
-      </p>
+    <Card className="p-5 sm:p-6"><PanelHeader eyebrow="Distribuição" title="Publicações" description="Uma falha não bloqueia os outros destinos. Reenviar usa a fila idempotente do worker." />
       <div className="mt-5 grid gap-3">
         {items.length ? (
           items.map((item) => (
@@ -71,7 +69,7 @@ export function PublicationPanel() {
             </article>
           ))
         ) : (
-          <p>Ainda não há publicações na fila.</p>
+          <EmptyState title="Ainda não há publicações na fila" description="As próximas distribuições aparecerão aqui." />
         )}
       </div>
       {(notice || publications.error) && (
@@ -82,6 +80,6 @@ export function PublicationPanel() {
               : "Não foi possível carregar publicações.")}
         </p>
       )}
-    </section>
+    </Card>
   );
 }

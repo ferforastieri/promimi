@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppFrame, BrandMark, Button, NotFoundPage, PageLayout } from "@promimi/design-system";
+import { AppFrame, BrandMark, Button, IconButton, LoadingCard, NavigationItem, NotFoundPage, PageLayout, Skeleton, StatusPill, TableSkeleton, TextButton } from "@promimi/design-system";
 import { Dashboard } from "../dashboard/Dashboard";
 import { LoginScreen } from "../auth/LoginScreen";
 import { useCurrentSession, useLogout } from "../auth/hooks";
@@ -14,28 +14,16 @@ import { IntegrationPanel } from "../integrations/IntegrationPanel";
 import { PublicationPanel } from "../publishing/PublicationPanel";
 import { StatisticsPanel } from "../analytics/StatisticsPanel";
 
-type Tab =
-  | "Visão geral"
-  | "Ofertas"
-  | "Categorias"
-  | "Comentários"
-  | "Usuários"
-  | "Rotinas"
-  | "Integrações"
-  | "Publicações"
-  | "Estatísticas";
-const tabs: Tab[] = [
-  "Visão geral",
-  "Ofertas",
-  "Categorias",
-  "Comentários",
-  "Usuários",
-  "Rotinas",
-  "Integrações",
-  "Publicações",
-  "Estatísticas",
+type Tab = "Visão geral" | "Ofertas" | "Categorias" | "Comentários" | "Usuários" | "Rotinas" | "Integrações" | "Publicações" | "Estatísticas";
+const tabs: Array<{ label: Tab; icon: string }> = [
+  { label: "Visão geral", icon: "▦" }, { label: "Ofertas", icon: "◇" }, { label: "Categorias", icon: "▤" },
+  { label: "Comentários", icon: "◌" }, { label: "Usuários", icon: "♙" }, { label: "Rotinas", icon: "↻" },
+  { label: "Integrações", icon: "⌁" }, { label: "Publicações", icon: "◉" }, { label: "Estatísticas", icon: "↗" },
 ];
-const icons = ["▦", "◇", "⊞", "▤", "♙", "↻", "⌁", "◌", "↗"];
+
+function AdminNavigation({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
+  return <nav className="flex gap-1 overflow-x-auto px-4 py-3 lg:grid lg:gap-1 lg:px-3 lg:py-5" aria-label="Navegação do painel">{tabs.map((item) => <NavigationItem key={item.label} active={tab === item.label} icon={item.icon} onClick={() => onChange(item.label)}>{item.label}</NavigationItem>)}</nav>;
+}
 
 export function AdminScreen() {
   const [tab, setTab] = useState<Tab>("Visão geral");
@@ -45,113 +33,30 @@ export function AdminScreen() {
   const statistics = useStatistics();
   const formOptions = useOfferFormOptions();
   const logout = useLogout();
-  const isStaff =
-    session.data?.data.role === "ADMIN" || session.data?.data.role === "EDITOR";
+  const isStaff = session.data?.data.role === "ADMIN" || session.data?.data.role === "EDITOR";
 
   if (window.location.pathname !== "/") return <NotFoundPage homeHref="/" homeLabel="Abrir painel" title="Área não encontrada" description="Esta área do painel não existe." />;
-  if (session.isLoading)
-    return (
-      <main className="grid min-h-screen place-items-center bg-mist text-sm text-ink/60">
-        <p>Verificando sessão segura…</p>
-      </main>
-    );
+  if (session.isLoading) return <main className="grid min-h-screen grid-cols-[15.25rem_1fr] bg-mist p-3"><Skeleton className="rounded-[28px]" /><div className="ml-3 grid gap-5"><Skeleton className="h-[74px] rounded-[28px]" /><div className="grid grid-cols-4 gap-3"><LoadingCard /><LoadingCard /><LoadingCard /><LoadingCard /></div><LoadingCard className="h-80" /></div></main>;
   if (!isStaff) return <LoginScreen />;
 
-  const refresh = () =>
-    Promise.all([
-      offers.refetch(),
-      statistics.refetch(),
-      formOptions.refetch(),
-    ]);
-  const logoutNow = async () => {
-    await logout.mutateAsync();
-    setTab("Visão geral");
-  };
+  const refresh = () => Promise.all([offers.refetch(), statistics.refetch(), formOptions.refetch()]);
+  const logoutNow = async () => { await logout.mutateAsync(); setTab("Visão geral"); };
   const data = offers.data?.data ?? [];
   const stats = statistics.data?.data;
-  const management =
-    tab === "Integrações" ? (
-      <IntegrationPanel />
-    ) : tab === "Rotinas" ? (
-      <RoutinePanel />
-    ) : tab === "Categorias" ? (
-      <CategoryPanel />
-    ) : tab === "Usuários" ? (
-      <UserPanel />
-    ) : tab === "Publicações" ? (
-      <PublicationPanel />
-    ) : tab === "Estatísticas" ? (
-      <StatisticsPanel />
-    ) : (
-      <CommentPanel />
-    );
+  const management = tab === "Integrações" ? <IntegrationPanel /> : tab === "Rotinas" ? <RoutinePanel /> : tab === "Categorias" ? <CategoryPanel /> : tab === "Usuários" ? <UserPanel /> : tab === "Publicações" ? <PublicationPanel /> : tab === "Estatísticas" ? <StatisticsPanel /> : <CommentPanel />;
 
-  return (
-    <AppFrame className="lg:grid lg:grid-cols-[15rem_1fr]">
-      <aside className="flex border-b border-white/10 bg-[#22292e] px-4 py-4 text-slate-100 lg:min-h-screen lg:flex-col lg:border-b-0 lg:px-4 lg:py-8">
-        <a className="px-2 text-2xl tracking-[-.12em] text-white" href="#inicio">
-          <BrandMark className="h-7 w-7" label="" /><span className="font-normal">pro</span><b>mimi</b><i className="not-italic text-brand">•</i><small className="ml-3 font-mono text-[9px] tracking-[.16em] text-slate-400">PAINEL</small>
-        </a>
-        <nav className="ml-auto flex gap-1 overflow-x-auto lg:ml-0 lg:mt-12 lg:grid">
-          {tabs.map((item, index) => (
-            <button
-              key={item}
-              onClick={() => setTab(item)}
-              className={`flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition ${tab === item ? "bg-white/12 text-white" : "text-slate-400 hover:bg-white/8 hover:text-white"}`}
-            >
-              <span>{icons[index]}</span>
-              {item}
-            </button>
-          ))}
-        </nav>
-        <div className="hidden items-center gap-2 border-t border-white/10 px-2 pt-4 lg:mt-auto lg:flex">
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-orange-200 text-[10px] font-bold text-ink">{session.data?.data.email.slice(0, 1).toUpperCase()}</span>
-          <div className="grid text-xs"><strong>{session.data?.data.name ?? session.data?.data.email}</strong><small className="text-[10px] text-slate-400">Sessão protegida</small>
-          </div>
-          <button className="ml-auto text-xs text-slate-400 hover:text-white disabled:opacity-50" disabled={logout.isPending} onClick={() => void logoutNow()}>
-            Sair
-          </button>
-        </div>
-      </aside>
-      <PageLayout as="section" width="fluid" className="px-4 py-5 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-        <header className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{tab}</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-white text-ink/60 transition hover:border-brand/40 disabled:cursor-wait disabled:opacity-50" disabled={offers.isFetching || statistics.isFetching || formOptions.isFetching} onClick={() => void refresh()}>
-              ↻
-            </button>
-            <Button onClick={() => setModal(true)}>+ Nova oferta</Button>
-          </div>
-        </header>
-        {(offers.error || statistics.error) && (
-          <div className="mb-5 rounded-xl border border-danger/20 bg-danger-soft px-4 py-3 text-sm text-danger">
-            {offers.error instanceof Error
-              ? offers.error.message
-              : statistics.error instanceof Error
-                ? statistics.error.message
-                : "Falha ao atualizar o painel."}
-          </div>
-        )}
-        {(offers.isLoading || statistics.isLoading) && (tab === "Visão geral" || tab === "Ofertas") ? <p className="text-sm text-ink/60">Carregando dados…</p> : tab === "Visão geral" || tab === "Ofertas" ? (
-          <Dashboard
-            offers={data}
-            statistics={stats!}
-            onNewOffer={() => setModal(true)}
-          />
-        ) : (
-          management
-        )}
+  return <AppFrame className="p-0 lg:p-3"><div className="min-h-screen bg-mist lg:grid lg:min-h-[calc(100vh-1.5rem)] lg:grid-cols-[15.25rem_1fr] lg:overflow-hidden lg:rounded-[28px] lg:border lg:border-line lg:bg-white lg:shadow-[0_16px_48px_rgba(29,36,50,.06)]">
+    <aside className="border-b border-line bg-white lg:flex lg:min-h-0 lg:flex-col lg:border-b-0 lg:border-r">
+      <a className="mx-4 mt-4 inline-flex w-max items-center gap-2.5 rounded-2xl bg-mist px-3.5 py-2.5 text-[22px] font-semibold tracking-[-.08em] lg:mx-5 lg:mt-5" href="#inicio"><BrandMark className="h-8 w-8" label="" /><span>pro<b>mimi</b><i className="not-italic text-brand">•</i></span></a>
+      <AdminNavigation tab={tab} onChange={setTab} />
+      <div className="hidden border-t border-line p-4 lg:mt-auto lg:block"><div className="flex items-center gap-2.5 rounded-xl p-2"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand">{session.data?.data.email.slice(0, 1).toUpperCase()}</span><div className="min-w-0 flex-1"><strong className="block truncate text-xs">{session.data?.data.name ?? session.data?.data.email}</strong><span className="mt-0.5 block text-[11px] text-ink/48">Sessão protegida</span></div><TextButton className="text-xs" disabled={logout.isPending} onClick={() => void logoutNow()}>{logout.isPending ? "…" : "Sair"}</TextButton></div></div>
+    </aside>
+    <main className="min-w-0 bg-mist/80"><header className="flex min-h-[74px] items-center justify-between gap-3 border-b border-line bg-white/85 px-4 backdrop-blur sm:px-6 lg:px-8"><div><p className="hidden text-[11px] font-medium text-ink/46 sm:block">Operação Promimi</p><h1 className="text-lg font-semibold tracking-[-.025em] sm:text-xl">{tab}</h1></div><div className="flex items-center gap-2"><StatusPill tone="green"><span className="hidden sm:inline">Sistema </span>online</StatusPill><IconButton label="Atualizar dados" disabled={offers.isFetching || statistics.isFetching || formOptions.isFetching} onClick={() => void refresh()}>↻</IconButton><Button onClick={() => setModal(true)} leading={<span className="text-base leading-none">+</span>} className="hidden sm:inline-flex">Nova oferta</Button><Button onClick={() => setModal(true)} className="sm:hidden">+ Nova</Button></div></header>
+      <PageLayout as="section" width="fluid" className="px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+        {(offers.error || statistics.error) && <div className="mb-5 rounded-xl border border-danger/15 bg-danger-soft px-4 py-3 text-sm text-danger">{offers.error instanceof Error ? offers.error.message : statistics.error instanceof Error ? statistics.error.message : "Falha ao atualizar o painel."}</div>}
+        {(offers.isLoading || statistics.isLoading) && (tab === "Visão geral" || tab === "Ofertas") ? <div className="grid gap-4"><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><LoadingCard /><LoadingCard /><LoadingCard /><LoadingCard /></div><TableSkeleton rows={6} columns={5} /></div> : tab === "Visão geral" || tab === "Ofertas" ? <Dashboard offers={data} statistics={stats!} onNewOffer={() => setModal(true)} /> : management}
       </PageLayout>
-      {modal && (
-        <OfferForm
-          stores={formOptions.data?.stores ?? []}
-          categories={formOptions.data?.categories ?? []}
-          onCancel={() => setModal(false)}
-          onSaved={() => setModal(false)}
-        />
-      )}
-    </AppFrame>
-  );
+    </main>
+    <OfferForm open={modal} loading={formOptions.isLoading} stores={formOptions.data?.stores ?? []} categories={formOptions.data?.categories ?? []} onCancel={() => setModal(false)} onSaved={() => setModal(false)} />
+  </div></AppFrame>;
 }
