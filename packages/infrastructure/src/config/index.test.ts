@@ -18,9 +18,9 @@ test("accepts explicitly configured browser origins", () => {
   assert.deepEqual(
     loadApiConfig({
       ...valid,
-      CORS_ALLOWED_ORIGINS: "http://192.168.15.10:5173",
+      CORS_ALLOWED_ORIGINS: "http://localhost:5173,https://admin.example.com",
     }).CORS_ALLOWED_ORIGINS,
-    ["http://192.168.15.10:5173"],
+    ["http://localhost:5173", "https://admin.example.com"],
   );
 });
 

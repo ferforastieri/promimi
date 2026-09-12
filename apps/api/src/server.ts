@@ -26,11 +26,7 @@ const app = Fastify({ logger: true, trustProxy: true, bodyLimit: 1_048_576 });
 app.decorate("promimiConfig", config);
 const allowedOrigins = new Set(
   [
-    config.APP_URL,
-    config.ADMIN_URL,
     ...config.CORS_ALLOWED_ORIGINS,
-    "http://localhost:3000",
-    "http://localhost:5173",
   ].filter((origin): origin is string => Boolean(origin)),
 );
 await app.register(helmet, {

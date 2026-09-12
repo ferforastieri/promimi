@@ -29,7 +29,6 @@ export const apiEnvironmentSchema = databaseEnvironmentSchema
       .default("development"),
     PORT: z.coerce.number().int().min(1).max(65_535).default(3001),
     APP_URL: url.default("http://localhost:3000"),
-    ADMIN_URL: url.optional(),
     CORS_ALLOWED_ORIGINS: originList,
     API_URL: url.default("http://localhost:3001"),
     PUBLIC_API_URL: url.optional(),
@@ -66,9 +65,9 @@ export const adminEnvironmentSchema = z.object({
     .pipe(z.array(hostname)),
 });
 
-/** Local development proxy target for the browser applications. */
 export const frontendEnvironmentSchema = z.object({
-  DEV_API_URL: url.default("http://localhost:3001"),
+  API_URL: url.default("http://localhost:3001"),
+  PUBLIC_API_URL: url.optional(),
 });
 
 export const whatsappEnvironmentSchema = z.object({
