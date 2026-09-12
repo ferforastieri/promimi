@@ -5,6 +5,17 @@ export const databaseEnvironmentSchema = z.object({
 });
 
 const url = z.string().url();
+const originList = z
+  .string()
+  .optional()
+  .transform(
+    (value) =>
+      value
+        ?.split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean) ?? [],
+  )
+  .pipe(z.array(url));
 const applicationSecrets = z.object({
   JWT_SECRET: z.string().min(32),
   INTEGRATION_ENCRYPTION_KEY: z.string().min(32),
@@ -19,6 +30,7 @@ export const apiEnvironmentSchema = databaseEnvironmentSchema
     PORT: z.coerce.number().int().min(1).max(65_535).default(3001),
     APP_URL: url.default("http://localhost:3000"),
     ADMIN_URL: url.optional(),
+    CORS_ALLOWED_ORIGINS: originList,
     API_URL: url.default("http://localhost:3001"),
     PUBLIC_API_URL: url.optional(),
     BOOTSTRAP_ADMIN_EMAIL: z.string().email().optional(),
@@ -54,6 +66,11 @@ export const adminEnvironmentSchema = z.object({
     .pipe(z.array(hostname)),
 });
 
+/** Local development proxy target for the browser applications. */
+export const frontendEnvironmentSchema = z.object({
+  DEV_API_URL: url.default("http://localhost:3001"),
+});
+
 export const whatsappEnvironmentSchema = z.object({
   WHATSAPP_BRIDGE_TOKEN: z.string().min(32),
   WHATSAPP_PORT: z.coerce.number().int().min(1).max(65_535).default(3100),
@@ -66,5 +83,6 @@ export const mobileEnvironmentSchema = z.object({
 export type ApiConfig = z.infer<typeof apiEnvironmentSchema>;
 export type WorkerConfig = z.infer<typeof workerEnvironmentSchema>;
 export type AdminConfig = z.infer<typeof adminEnvironmentSchema>;
+export type FrontendConfig = z.infer<typeof frontendEnvironmentSchema>;
 export type WhatsappConfig = z.infer<typeof whatsappEnvironmentSchema>;
 export type MobileConfig = z.infer<typeof mobileEnvironmentSchema>;

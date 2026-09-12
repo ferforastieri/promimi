@@ -10,6 +10,7 @@
     "./config/admin": { "types": "./src/config/admin.ts", "default": "./dist/config/admin.js" },
     "./config/api": { "types": "./src/config/api.ts", "default": "./dist/config/api.js" },
     "./config/database": { "types": "./src/config/database.ts", "default": "./dist/config/database.js" },
+    "./config/frontend": { "types": "./src/config/frontend.ts", "default": "./dist/config/frontend.js" },
     "./config/mobile": { "types": "./src/config/mobile.ts", "default": "./dist/config/mobile.js" },
     "./config/whatsapp": { "types": "./src/config/whatsapp.ts", "default": "./dist/config/whatsapp.js" },
     "./config/worker": { "types": "./src/config/worker.ts", "default": "./dist/config/worker.js" }

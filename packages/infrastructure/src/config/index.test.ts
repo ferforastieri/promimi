@@ -14,6 +14,16 @@ test("accepts a complete runtime configuration", () => {
   assert.equal(loadApiConfig(valid).PORT, 3001);
 });
 
+test("accepts explicitly configured browser origins", () => {
+  assert.deepEqual(
+    loadApiConfig({
+      ...valid,
+      CORS_ALLOWED_ORIGINS: "http://192.168.15.10:5173",
+    }).CORS_ALLOWED_ORIGINS,
+    ["http://192.168.15.10:5173"],
+  );
+});
+
 test("rejects insecure application secrets", () => {
   assert.throws(() => loadApiConfig({ ...valid, JWT_SECRET: "short" }));
 });

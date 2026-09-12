@@ -10,6 +10,7 @@
     "typecheck": "react-router typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@promimi/infrastructure": "workspace:*",
     "@promimi/query": "workspace:*",
     "@promimi/design-system": "workspace:*",
     "@react-router/node": "^7.6.2",

@@ -149,6 +149,9 @@ importers:
       '@promimi/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@promimi/infrastructure':
+        specifier: workspace:*
+        version: link:../../packages/infrastructure
       '@promimi/query':
         specifier: workspace:*
         version: link:../../packages/query
