@@ -6,7 +6,7 @@
   "scripts": {
     "sync": "pnpm --filter @promimi/infrastructure build && cap sync android",
     "android:debug": "pnpm sync && cd android && ./gradlew assembleDebug",
-    "android:apk": "pnpm exec tsx -e \"import { loadMobileReleaseConfig } from '@promimi/infrastructure/config/mobile'; loadMobileReleaseConfig()\" && pnpm sync && cd android && ./gradlew assembleRelease"
+    "android:apk": "pnpm --filter @promimi/infrastructure build && node --input-type=module -e \"import { loadMobileReleaseConfig } from '@promimi/infrastructure/config/mobile'; loadMobileReleaseConfig()\" && pnpm sync && cd android && ./gradlew assembleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
