@@ -1,10 +1,10 @@
 import { Card, PageLayout, PanelHeader } from "@promimi/design-system";
-import { Footer, Header } from "../../shell/components";
+import { PublicFooter, PublicHeader } from "@promimi/design-system";
 export const meta = () => [{ title: "Termos de uso — Promimi" }];
 export default function Terms() {
   return (
     <>
-      <Header />
+      <PublicHeader />
       <PageLayout width="reading">
         <Card className="p-6 sm:p-8">
           <PanelHeader eyebrow="Transparência" title="Termos de uso" />
@@ -32,7 +32,7 @@ export default function Terms() {
           </p>
         </Card>
       </PageLayout>
-      <Footer />
+      <PublicFooter />
     </>
   );
 }

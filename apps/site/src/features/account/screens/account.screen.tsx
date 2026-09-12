@@ -4,14 +4,17 @@ import {
   Avatar,
   Button,
   Card,
+  CommerceOfferCard,
   EmptyState,
   LoadingCard,
   PageLayout,
   PanelHeader,
+  PublicFooter,
+  PublicHeader,
   useToast,
 } from "@promimi/design-system";
-import { Footer, Header, OfferCard } from "../../shell/components";
 import { useAccount, useRemoveAccount } from "../hooks";
+import { toCommerceOfferCardProps } from "../../catalog/presenter";
 
 export default function Account() {
   const account = useAccount();
@@ -43,7 +46,7 @@ export default function Account() {
   };
   return (
     <>
-      <Header />
+      <PublicHeader />
       <PageLayout>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -119,7 +122,7 @@ export default function Account() {
                 {offers.length ? (
                   <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {offers.map((offer) => (
-                      <OfferCard key={offer.id} offer={offer} />
+                      <CommerceOfferCard key={offer.id} {...toCommerceOfferCardProps(offer)} />
                     ))}
                   </div>
                 ) : (
@@ -165,7 +168,7 @@ export default function Account() {
           )
         )}
       </PageLayout>
-      <Footer />
+      <PublicFooter />
     </>
   );
 }

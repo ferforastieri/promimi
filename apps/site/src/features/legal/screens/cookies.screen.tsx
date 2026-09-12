@@ -1,10 +1,10 @@
 import { Card, PageLayout, PanelHeader } from "@promimi/design-system";
-import { Footer, Header } from "../../shell/components";
+import { PublicFooter, PublicHeader } from "@promimi/design-system";
 export const meta = () => [{ title: "Cookies — Promimi" }];
 export default function Cookies() {
   return (
     <>
-      <Header />
+      <PublicHeader />
       <PageLayout width="reading">
         <Card className="p-6 sm:p-8">
           <PanelHeader eyebrow="Transparência" title="Cookies" />
@@ -23,7 +23,7 @@ export default function Cookies() {
           </p>
         </Card>
       </PageLayout>
-      <Footer />
+      <PublicFooter />
     </>
   );
 }

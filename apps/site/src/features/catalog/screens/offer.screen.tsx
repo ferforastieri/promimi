@@ -3,13 +3,16 @@ import { Link } from "react-router";
 import {
   Button,
   Card,
+  CommerceOfferCard,
   NotFoundPage,
   PageLayout,
+  PublicFooter,
+  PublicHeader,
   StatusPill,
   useToast,
 } from "@promimi/design-system";
-import { Footer, Header, OfferCard } from "../../shell/components";
 import { apiOffers, brl } from "../server";
+import { toCommerceOfferCardProps } from "../presenter";
 import { OfferActions } from "../../offer/OfferActions";
 
 const visualTones: Record<string, string> = {
@@ -99,7 +102,7 @@ export default function Offer({
   };
   return (
     <>
-      <Header />
+      <PublicHeader />
       <PageLayout>
         <Link
           className="mb-5 inline-flex text-sm font-semibold text-ink/60 transition hover:text-brand"
@@ -211,12 +214,12 @@ export default function Offer({
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {related.map((item) => (
-              <OfferCard key={item.id} offer={item} />
+              <CommerceOfferCard key={item.id} {...toCommerceOfferCardProps(item)} />
             ))}
           </div>
         </section>
       </PageLayout>
-      <Footer />
+      <PublicFooter />
     </>
   );
 }

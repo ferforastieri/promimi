@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { AuthShell, Button, Field, Input } from "@promimi/design-system";
-import { Header } from "../../shell/components";
+import { PublicHeader } from "@promimi/design-system";
 import { useResetPassword } from "../hooks";
 
 export default function ResetPassword() {
@@ -29,7 +29,7 @@ export default function ResetPassword() {
   };
   return (
     <>
-      <Header />
+      <PublicHeader />
       <AuthShell
         eyebrow="Nova senha"
         title={

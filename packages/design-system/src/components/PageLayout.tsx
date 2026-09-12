@@ -21,5 +21,5 @@ export function PageLayout({ as, children, className = "", width = "content" }: 
 }
 
 export function AppFrame({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`min-h-screen bg-mist text-ink ${className}`}>{children}</div>;
+  return <div className={`min-h-screen bg-[#f3f4f6] text-ink ${className}`}>{children}</div>;
 }

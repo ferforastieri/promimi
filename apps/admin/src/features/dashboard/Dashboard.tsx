@@ -1,6 +1,12 @@
 import type { AdminOffer } from "../../api/features/offers/list-offers";
 import type { AdminStatistics } from "../../api/features/analytics/get-statistics";
-import { Button, Card, MetricCard, PanelHeader } from "@promimi/design-system";
+import {
+  Button,
+  Icon,
+  MetricCard,
+  StatusPill,
+  WorkspaceOverview,
+} from "@promimi/design-system";
 import { OfferTable } from "../offers/OfferTable";
 
 export function Dashboard({
@@ -13,41 +19,25 @@ export function Dashboard({
   onNewOffer: () => void;
 }) {
   const metrics = [
-    [statistics.activeOffers, "Ofertas ativas", "brand"],
-    [statistics.rawClicks24h, "Cliques brutos em 24h", "neutral"],
-    [statistics.clicks24h, "Cliques filtrados em 24h", "info"],
-    [statistics.visibleComments, "Comentários visíveis", "success"],
+    [statistics.activeOffers, "Ofertas ativas", "brand", "tag"],
+    [statistics.rawClicks24h, "Cliques em 24h", "neutral", "activity"],
+    [statistics.clicks24h, "Cliques qualificados", "info", "chart"],
+    [statistics.visibleComments, "Comentários visíveis", "success", "chat"],
   ] as const;
   return (
-    <>
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <p className="text-sm text-ink/55">
-          Acompanhe o catálogo, a distribuição e a atividade da comunidade.
-        </p>
-        <Button variant="secondary" size="sm" onClick={onNewOffer}>
-          + Cadastrar oferta
-        </Button>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map(([value, label, tone]) => (
-          <MetricCard key={label} value={value} label={label} tone={tone} />
-        ))}
-      </div>
-      <Card className="mt-5 overflow-hidden">
-        <div className="border-b border-line px-5 py-5">
-          <PanelHeader
-            eyebrow="Catálogo"
-            title="Ofertas recentes"
-            description="Acompanhe e atualize as últimas ofertas cadastradas."
-            action={
-              <Button variant="ghost" size="sm" onClick={onNewOffer}>
-                Ver todas
-              </Button>
-            }
-          />
-        </div>
-        <OfferTable offers={offers} />
-      </Card>
-    </>
+    <WorkspaceOverview
+      title="Controle a operação"
+      status={<StatusPill tone="green">Tudo funcionando</StatusPill>}
+      description="Acompanhe catálogo, alcance e atividade da comunidade em um só lugar."
+      toolbar={
+        <>
+          <Button variant="subtle" size="sm" leading={<Icon name="calendar" />}>Últimas 24h</Button>
+          <Button variant="secondary" size="sm" leading={<Icon name="tag" />} onClick={onNewOffer}>Cadastrar oferta</Button>
+        </>
+      }
+      metrics={metrics.map(([value, label, tone, icon]) => <MetricCard key={label} value={value} label={label} tone={tone} icon={<Icon name={icon} />} />)}
+    >
+      <OfferTable offers={offers} />
+    </WorkspaceOverview>
   );
 }

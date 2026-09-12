@@ -2,13 +2,16 @@ import { Form, Link } from "react-router";
 import {
   Button,
   Card,
+  CommerceOfferCard,
   EmptyState,
   Field,
   Input,
   PageLayout,
+  PublicFooter,
+  PublicHeader,
 } from "@promimi/design-system";
-import { Footer, Header, OfferCard } from "../../shell/components";
 import { apiOffers } from "../server";
+import { toCommerceOfferCardProps } from "../presenter";
 
 export async function loader({ request }: { request: Request }) {
   const url = new URL(request.url);
@@ -34,7 +37,7 @@ export default function Search({
 }) {
   return (
     <>
-      <Header />
+      <PublicHeader />
       <PageLayout>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -96,7 +99,7 @@ export default function Search({
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {loaderData.offers.length ? (
             loaderData.offers.map((offer) => (
-              <OfferCard key={offer.id} offer={offer} />
+              <CommerceOfferCard key={offer.id} {...toCommerceOfferCardProps(offer)} />
             ))
           ) : (
             <div className="col-span-full">
@@ -116,7 +119,7 @@ export default function Search({
           )}
         </div>
       </PageLayout>
-      <Footer />
+      <PublicFooter />
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { AuthShell, Button, Field, Input } from "@promimi/design-system";
-import { Header } from "../../shell/components";
+import { PublicHeader } from "@promimi/design-system";
 import { useRequestPasswordReset } from "../hooks";
 
 export default function Recover() {
@@ -24,7 +24,7 @@ export default function Recover() {
   };
   return (
     <>
-      <Header />
+      <PublicHeader />
       <AuthShell
         eyebrow="Recuperar acesso"
         title={

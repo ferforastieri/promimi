@@ -1,10 +1,10 @@
 import { Card, PageLayout, PanelHeader } from "@promimi/design-system";
-import { Footer, Header } from "../../shell/components";
+import { PublicFooter, PublicHeader } from "@promimi/design-system";
 export const meta = () => [{ title: "Privacidade — Promimi" }];
 export default function Privacy() {
   return (
     <>
-      <Header />
+      <PublicHeader />
       <PageLayout width="reading">
         <Card className="p-6 sm:p-8">
           <PanelHeader eyebrow="Transparência" title="Privacidade" />
@@ -31,7 +31,7 @@ export default function Privacy() {
           </p>
         </Card>
       </PageLayout>
-      <Footer />
+      <PublicFooter />
     </>
   );
 }

@@ -8,7 +8,7 @@ import {
   TextButton,
   useToast,
 } from "@promimi/design-system";
-import { Header } from "../../shell/components";
+import { PublicHeader } from "@promimi/design-system";
 import { useLogin, useRegister } from "../hooks";
 
 export default function Login() {
@@ -50,7 +50,7 @@ export default function Login() {
   };
   return (
     <>
-      <Header />
+      <PublicHeader />
       <AuthShell
         eyebrow="Sua conta Promimi"
         title={

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router";
 import { AuthShell, Skeleton, StatusPill } from "@promimi/design-system";
-import { Header } from "../../shell/components";
+import { PublicHeader } from "@promimi/design-system";
 import { useVerifyEmail } from "../hooks";
 
 export default function VerifyEmail() {
@@ -23,7 +23,7 @@ export default function VerifyEmail() {
       : "E-mail confirmado. Sua conta está pronta para usar.";
   return (
     <>
-      <Header />
+      <PublicHeader />
       <AuthShell
         eyebrow="Confirmação de e-mail"
         title={

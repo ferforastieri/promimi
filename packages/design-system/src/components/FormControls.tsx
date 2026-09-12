@@ -6,7 +6,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 
-const control = "w-full rounded-xl border border-line bg-white px-3.5 text-sm text-ink shadow-[0_1px_2px_rgba(26,32,44,.02)] outline-none transition placeholder:text-ink/38 hover:border-ink/15 focus:border-brand focus:ring-4 focus:ring-brand/10 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-ink/45";
+const control = "w-full !rounded-[14px] border border-line/80 bg-[#fafbfc] px-3.5 text-sm text-ink outline-none transition placeholder:text-ink/38 hover:border-ink/15 hover:bg-white focus:border-brand focus:bg-white focus:ring-4 focus:ring-brand/10 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-ink/45";
 
 export function Field({ label, hint, error, children, className = "" }: { label: string; hint?: string; error?: string; children: ReactNode; className?: string }) {
   return <label className={`grid gap-1.5 ${className}`}><span className="text-xs font-semibold text-ink/75">{label}</span>{children}{error ? <span className="text-xs text-danger">{error}</span> : hint ? <span className="text-xs leading-5 text-ink/48">{hint}</span> : null}</label>;

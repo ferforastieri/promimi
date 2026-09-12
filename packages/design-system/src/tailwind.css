@@ -4,9 +4,9 @@
   --font-mono: "DM Mono", ui-monospace, monospace;
   --color-ink: #252936;
   --color-paper: #ffffff;
-  --color-mist: #f6f7fb;
-  --color-surface-subtle: #f1f3f7;
-  --color-line: #e8ebf1;
+  --color-mist: #f3f4f6;
+  --color-surface-subtle: #f1f2f5;
+  --color-line: #e7e9ee;
   --color-brand: #ee4d2d;
   --color-brand-dark: #d83b1d;
   --color-brand-soft: #fff0ec;
@@ -25,7 +25,7 @@
   body { @apply m-0 bg-mist font-sans text-ink antialiased; }
   button, input, select, textarea { font: inherit; }
   input:not([type="checkbox"]):not([type="radio"]), select, textarea {
-    @apply rounded-xl border border-line bg-white text-ink outline-none transition placeholder:text-ink/38 focus:border-brand focus:ring-4 focus:ring-brand/10 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-ink/45;
+    @apply !rounded-[14px] border border-line bg-white text-ink outline-none transition placeholder:text-ink/38 focus:border-brand focus:ring-4 focus:ring-brand/10 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-ink/45;
   }
   button, a, input, select, textarea { @apply focus-visible:outline-3 focus-visible:outline-brand/35 focus-visible:outline-offset-2; }
   ::selection { @apply bg-brand/20 text-ink; }
