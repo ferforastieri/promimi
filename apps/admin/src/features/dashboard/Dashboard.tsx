@@ -4,7 +4,6 @@ import {
   Button,
   Icon,
   MetricCard,
-  StatusPill,
   WorkspaceOverview,
 } from "@promimi/design-system";
 import { OfferTable } from "../offers/OfferTable";
@@ -27,7 +26,6 @@ export function Dashboard({
   return (
     <WorkspaceOverview
       title="Controle a operação"
-      status={<StatusPill tone="green">Tudo funcionando</StatusPill>}
       description="Acompanhe catálogo, alcance e atividade da comunidade em um só lugar."
       toolbar={
         <>

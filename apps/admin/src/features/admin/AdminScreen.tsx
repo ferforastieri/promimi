@@ -7,7 +7,7 @@ import {
   IconButton,
   NotFoundPage,
   PageLayout,
-  StatusPill,
+  useToast,
   WorkspaceLoading,
   WorkspaceShell,
   type WorkspaceNavigationItem,
@@ -25,6 +25,7 @@ import { RoutinePanel } from "../automation/RoutinePanel";
 import { IntegrationPanel } from "../integrations/IntegrationPanel";
 import { PublicationPanel } from "../publishing/PublicationPanel";
 import { StatisticsPanel } from "../analytics/StatisticsPanel";
+import type { SessionUser } from "../../api/types";
 
 type Tab =
   | "Visão geral"
@@ -49,15 +50,9 @@ const tabs: Array<WorkspaceNavigationItem & { id: Tab }> = [
 ];
 
 export function AdminScreen() {
-  const [tab, setTab] = useState<Tab>("Visão geral");
-  const [modal, setModal] = useState(false);
   const session = useCurrentSession();
-  const offers = useOffers();
-  const statistics = useStatistics();
-  const formOptions = useOfferFormOptions();
-  const logout = useLogout();
-  const isStaff =
-    session.data?.data.role === "ADMIN" || session.data?.data.role === "EDITOR";
+  const user = session.data?.data;
+  const isStaff = user?.role === "ADMIN" || user?.role === "EDITOR";
 
   if (window.location.pathname !== "/")
     return (
@@ -69,14 +64,20 @@ export function AdminScreen() {
       />
     );
   if (session.isLoading) return <WorkspaceLoading />;
-  if (!isStaff) return <LoginScreen />;
+  if (!isStaff || !user) return <LoginScreen />;
 
-  const refresh = () =>
-    Promise.all([
-      offers.refetch(),
-      statistics.refetch(),
-      formOptions.refetch(),
-    ]);
+  return <AuthenticatedAdmin user={user} />;
+}
+
+function AuthenticatedAdmin({ user }: { user: SessionUser }) {
+  const [tab, setTab] = useState<Tab>("Visão geral");
+  const [modal, setModal] = useState(false);
+  const offers = useOffers();
+  const statistics = useStatistics();
+  const formOptions = useOfferFormOptions();
+  const logout = useLogout();
+  const { showToast } = useToast();
+
   const logoutNow = async () => {
     await logout.mutateAsync();
     setTab("Visão geral");
@@ -107,11 +108,10 @@ export function AdminScreen() {
       onNavigate={(id) => setTab(id as Tab)}
       toolbar={
         <>
-          <StatusPill tone="green">Ao vivo</StatusPill>
-          <Button variant="subtle" size="sm" leading={<Icon name="calendar" />}>Hoje</Button>
-          <IconButton label="Atualizar dados" disabled={offers.isFetching || statistics.isFetching || formOptions.isFetching} onClick={() => void refresh()}><Icon name="refresh" /></IconButton>
-          <Button onClick={() => setModal(true)} size="sm" leading={<Icon name="plus" />}>Nova oferta</Button>
-          <Avatar name={session.data?.data.name ?? session.data?.data.email ?? "Admin"} size="sm" />
+          <IconButton label="Notificações" onClick={() => showToast({ title: "Nenhuma notificação nova", description: "As atualizações importantes da operação aparecerão aqui." })}>
+            <Icon name="bell" />
+          </IconButton>
+          <Avatar name={user.name ?? user.email} size="sm" />
           <Button variant="ghost" size="sm" disabled={logout.isPending} onClick={() => void logoutNow()}>{logout.isPending ? "Saindo…" : "Sair"}</Button>
         </>
       }
