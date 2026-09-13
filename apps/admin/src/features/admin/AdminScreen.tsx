@@ -1,15 +1,14 @@
 import { useState } from "react";
 import {
   Alert,
-  Avatar,
   Button,
   Icon,
-  IconButton,
   NotFoundPage,
   PageLayout,
   useToast,
   WorkspaceLoading,
   WorkspaceShell,
+  WorkspaceToolbar,
   type WorkspaceNavigationItem,
 } from "@promimi/design-system";
 import { Dashboard } from "../dashboard/Dashboard";
@@ -106,14 +105,29 @@ function AuthenticatedAdmin({ user }: { user: SessionUser }) {
       items={tabs}
       activeItem={tab}
       onNavigate={(id) => setTab(id as Tab)}
+      headerActions={
+        tab === "Ofertas" ? (
+          <Button size="sm" leading={<Icon name="tag" />} onClick={() => setModal(true)}>
+            Cadastrar oferta
+          </Button>
+        ) : null
+      }
       toolbar={
-        <>
-          <IconButton label="Notificações" onClick={() => showToast({ title: "Nenhuma notificação nova", description: "As atualizações importantes da operação aparecerão aqui." })}>
-            <Icon name="bell" />
-          </IconButton>
-          <Avatar name={user.name ?? user.email} size="sm" />
-          <Button variant="ghost" size="sm" disabled={logout.isPending} onClick={() => void logoutNow()}>{logout.isPending ? "Saindo…" : "Sair"}</Button>
-        </>
+        <WorkspaceToolbar
+          onSearch={(query) =>
+            showToast({
+              title: `Pesquisa por “${query}”`,
+              description: "A pesquisa global estará disponível conforme novas áreas forem indexadas.",
+            })
+          }
+          onSignOut={() => void logoutNow()}
+          signOutPending={logout.isPending}
+          user={{
+            email: user.email,
+            name: user.name,
+            roleLabel: user.role === "ADMIN" ? "Administradora" : "Editora",
+          }}
+        />
       }
     >
       <PageLayout as="section" width="fluid">
@@ -130,7 +144,7 @@ function AuthenticatedAdmin({ user }: { user: SessionUser }) {
             (tab === "Visão geral" || tab === "Ofertas") ? (
               <WorkspaceLoading />
             ) : tab === "Visão geral" || tab === "Ofertas" ? (
-              <Dashboard offers={data} statistics={stats!} onNewOffer={() => setModal(true)} />
+              <Dashboard offers={data} statistics={stats!} />
             ) : (
               management
             )}

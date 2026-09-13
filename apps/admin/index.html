@@ -6,10 +6,20 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#e5484d" />
+    <meta name="theme-color" content="#f3f4f6" />
     <meta name="description" content="Painel operacional do Promimi." />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>Promimi — Painel</title>
+    <script>
+      (() => {
+        const theme = localStorage.getItem("promimi-color-theme");
+        const resolved = theme === "dark" || theme === "light"
+          ? theme
+          : matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.theme = resolved;
+        document.documentElement.style.colorScheme = resolved;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

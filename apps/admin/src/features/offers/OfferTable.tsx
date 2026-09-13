@@ -174,7 +174,7 @@ export function OfferTable({ offers }: { offers: AdminOffer[] }) {
         >
           <div className="flex min-w-0 items-center gap-3">
             <span
-              className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-semibold ${["bg-info-soft text-info", "bg-brand-soft text-brand", "bg-pine-soft text-pine", "bg-[#f4efff] text-[#8764db]"][index % 4]}`}
+              className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-semibold ${["bg-info-soft text-info", "bg-brand-soft text-brand", "bg-pine-soft text-pine", "bg-surface-subtle text-ink/65"][index % 4]}`}
             >
               {offer.store.name.slice(0, 1).toUpperCase()}
             </span>

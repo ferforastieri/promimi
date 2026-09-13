@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
 import { PromimiQueryProvider } from "@promimi/query";
-import { brandFaviconSource, ToastProvider } from "@promimi/design-system";
+import {
+  brandFaviconSource,
+  ThemeProvider,
+  ToastProvider,
+} from "@promimi/design-system";
 import "./tailwind.css";
 import { AdminScreen } from "./features/admin/AdminScreen";
 
@@ -21,9 +25,11 @@ if ("serviceWorker" in navigator) {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <PromimiQueryProvider>
-    <ToastProvider>
-      <AdminScreen />
-    </ToastProvider>
-  </PromimiQueryProvider>,
+  <ThemeProvider>
+    <PromimiQueryProvider>
+      <ToastProvider>
+        <AdminScreen />
+      </ToastProvider>
+    </PromimiQueryProvider>
+  </ThemeProvider>,
 );

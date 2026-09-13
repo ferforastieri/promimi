@@ -6,7 +6,7 @@ type Toast = ToastInput & { id: number };
 type ToastContextValue = { showToast: (input: ToastInput) => void; dismissToast: (id: number) => void };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
-const tones: Record<ToastTone, string> = { success: "border-pine/20 bg-white text-ink", error: "border-danger/20 bg-white text-ink", info: "border-line bg-white text-ink" };
+const tones: Record<ToastTone, string> = { success: "border-pine/20 bg-paper text-ink", error: "border-danger/20 bg-paper text-ink", info: "border-line bg-paper text-ink" };
 const toneIcons: Record<ToastTone, string> = { success: "✓", error: "!", info: "i" };
 
 export function ToastProvider({ children }: { children: ReactNode }) {

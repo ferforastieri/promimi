@@ -9,11 +9,11 @@ export function SkeletonLines({ lines = 3, className = "" }: { lines?: number; c
 }
 
 export function LoadingCard({ className = "", lines = 3 }: { className?: string; lines?: number }) {
-  return <section className={`rounded-[20px] border border-line bg-white p-5 ${className}`} role="status" aria-label="Carregando conteúdo"><Skeleton className="h-4 w-24" /><Skeleton className="mt-4 h-8 w-16" /><SkeletonLines lines={lines} className="mt-5" /></section>;
+  return <section className={`rounded-[20px] border border-line bg-paper p-5 ${className}`} role="status" aria-label="Carregando conteúdo"><Skeleton className="h-4 w-24" /><Skeleton className="mt-4 h-8 w-16" /><SkeletonLines lines={lines} className="mt-5" /></section>;
 }
 
 export function TableSkeleton({ rows = 5, columns = 5, className = "" }: { rows?: number; columns?: number; className?: string }) {
-  return <div className={`overflow-hidden rounded-[20px] border border-line bg-white ${className}`} role="status" aria-label="Carregando tabela"><div className="grid gap-3 border-b border-line bg-surface-subtle/65 px-5 py-3" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>{Array.from({ length: columns }, (_, index) => <Skeleton key={index} className="h-3" />)}</div>{Array.from({ length: rows }, (_, row) => <div key={row} className="grid gap-3 border-b border-line px-5 py-4 last:border-b-0" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>{Array.from({ length: columns }, (_, column) => <Skeleton key={column} className={`h-4 ${column === 0 ? "w-4/5" : "w-3/5"}`} />)}</div>)}</div>;
+  return <div className={`overflow-hidden rounded-[20px] border border-line bg-paper ${className}`} role="status" aria-label="Carregando tabela"><div className="grid gap-3 border-b border-line bg-surface-subtle/65 px-5 py-3" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>{Array.from({ length: columns }, (_, index) => <Skeleton key={index} className="h-3" />)}</div>{Array.from({ length: rows }, (_, row) => <div key={row} className="grid gap-3 border-b border-line px-5 py-4 last:border-b-0" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>{Array.from({ length: columns }, (_, column) => <Skeleton key={column} className={`h-4 ${column === 0 ? "w-4/5" : "w-3/5"}`} />)}</div>)}</div>;
 }
 
 export function Alert({ tone = "info", title, children, className = "" }: { tone?: "info" | "success" | "error" | "warning"; title?: string; children: ReactNode; className?: string }) {

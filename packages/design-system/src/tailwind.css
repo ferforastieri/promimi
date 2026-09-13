@@ -20,12 +20,44 @@
   --color-info-soft: #edf3ff;
 }
 
+html {
+  color-scheme: light;
+  --ui-canvas: #f3f4f6;
+  --ui-shell: #f7f8fa;
+  --ui-control: #fafbfc;
+  --ui-overlay: #1e2431;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --color-ink: #f1f3f7;
+  --color-paper: #1a1d24;
+  --color-mist: #101218;
+  --color-surface-subtle: #252a34;
+  --color-line: #343a46;
+  --color-brand: #ff6948;
+  --color-brand-dark: #f55736;
+  --color-brand-soft: #3b221f;
+  --color-pine: #4ed88f;
+  --color-pine-soft: #173528;
+  --color-danger: #ff7986;
+  --color-danger-soft: #402129;
+  --color-amber: #ffc15a;
+  --color-amber-soft: #3f3116;
+  --color-info: #83b2ff;
+  --color-info-soft: #1e304e;
+  --ui-canvas: #101218;
+  --ui-shell: #151820;
+  --ui-control: #20242d;
+  --ui-overlay: #050609;
+}
+
 @layer base {
   * { @apply box-border; }
   body { @apply m-0 bg-mist font-sans text-ink antialiased; }
   button, input, select, textarea { font: inherit; }
   input:not([type="checkbox"]):not([type="radio"]), select, textarea {
-    @apply !rounded-[14px] border border-line bg-white text-ink outline-none transition placeholder:text-ink/38 focus:border-brand focus:ring-4 focus:ring-brand/10 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-ink/45;
+    @apply !rounded-[14px] border border-line bg-paper text-ink outline-none transition placeholder:text-ink/38 focus:border-brand focus:ring-4 focus:ring-brand/10 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-ink/45;
   }
   button, a, input, select, textarea { @apply focus-visible:outline-3 focus-visible:outline-brand/35 focus-visible:outline-offset-2; }
   ::selection { @apply bg-brand/20 text-ink; }
