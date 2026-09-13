@@ -276,7 +276,7 @@ jobs:
               fi
               sleep 3
             done
-            docker compose --env-file .env --env-file .deploy-images.env run --rm --no-deps -T --interactive=false api pnpm db:migrate
+            docker compose --env-file .env --env-file .deploy-images.env run --rm --no-deps -T --interactive=false api pnpm db:migrate </dev/null
           fi
 
           if [ -n "$RESTART_SERVICES" ]; then
