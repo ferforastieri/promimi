@@ -1,4 +1,4 @@
-import { databaseEnvironmentSchema } from "./environment.js";
+import { databaseEnvironmentSchema } from "./primitives.js";
 import { runtimeEnvironment, type RuntimeEnvironment } from "./runtime.js";
 export const loadDatabaseConfig = (
   environment: RuntimeEnvironment = runtimeEnvironment,

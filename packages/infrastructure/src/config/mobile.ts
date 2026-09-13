@@ -1,5 +1,12 @@
-import { mobileEnvironmentSchema } from "./environment.js";
+import { z } from "zod";
+import { url } from "./primitives.js";
 import { runtimeEnvironment, type RuntimeEnvironment } from "./runtime.js";
+
+export const mobileEnvironmentSchema = z.object({
+  PROMIMI_MOBILE_SITE_URL: url.optional(),
+});
+
+export type MobileConfig = z.infer<typeof mobileEnvironmentSchema>;
 
 export const loadMobileConfig = (
   environment: RuntimeEnvironment = runtimeEnvironment,
